@@ -144,7 +144,7 @@ public function store(Request $request)
         'sub_category' => 'required|string|max:255',
         'initial_balance' => 'nullable|numeric',
         'is_parent' => 'required|boolean',
-        'parent_id' => 'nullable|uuid|exists:accounting_accounts,id',
+        'parent_id' => ['nullable','uuid', Rule::exists(AccountingAccount::class, 'id')->where('license_id', $licenseId),],
         'person_type' => 'nullable|string',
     ]);
 
