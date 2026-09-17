@@ -277,7 +277,7 @@
 
                             <div class="col-md-4">
                                 <label class="form-label">Status Karyawan</label>
-                                <select name="employment_status" class="form-select" value="{{ old('employment_status', $employee->employment_status) }}">
+                                <select name="employment_status" class="form-select select2" value="{{ old('employment_status', $employee->employment_status) }}">
                                     <option value="">-- Pilih Status --</option>
                                     <option value="Tetap" {{ $employee->employment_status == "Tetap" ? 'selected' : '' }}>Tetap</option>
                                     <option value="Kontrak" {{ $employee->employment_status == "Kontrak" ? 'selected' : '' }}>Kontrak</option>
