@@ -260,7 +260,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Status Karyawan</label>
-                                <select name="employment_status" class="form-select" value="{{ old('employment_status') }}">
+                                <select name="employment_status" class="form-select select2" value="{{ old('employment_status') }}">
                                     <option value="">-- Pilih Status --</option>
                                     <option value="Tetap" {{ old('employment_status') == 'Tetap' ? 'selected' : '' }}>Tetap</option>
                                     <option value="Kontrak" {{ old('employment_status') == 'Kontrak' ? 'selected' : '' }}>Kontrak</option>
@@ -369,7 +369,6 @@
     <script>
         $(document).ready(function() {
             $('.select2').select2({
-                placeholder: "-- Pilih --",
                 width: '100%',
                 allowClear: true
             });
