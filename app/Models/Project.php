@@ -11,7 +11,7 @@ class Project extends Model
 {
     use HasUuids;
 
-    protected $table = 'projects';
+    protected $table = 'zhpicture.projects';
     protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; // kalau tabel tidak punya created_at / updated_at
@@ -208,40 +208,22 @@ public function latestSurveyInvoice()
 
 public function generateLevels()
 {
-    $levels = match ((int) $this->project_type) {
-        1 => [
-                ['level_order' => 1, 'level_name' => 'Konsultasi'],
-                ['level_order' => 2, 'level_name' => 'Rencana Survei'],
-                ['level_order' => 3, 'level_name' => 'Survei'],
-                ['level_order' => 4, 'level_name' => 'Penawaran Jasa Desain'],
-                ['level_order' => 5, 'level_name' => 'Kontrak Desain'],
-                ['level_order' => 6, 'level_name' => 'Invoice Desain DP'],
-                ['level_order' => 7, 'level_name' => 'Proses Pengerjaan'],
-                ['level_order' => 8, 'level_name' => 'Invoice Pelunasan Desain'],
-                ['level_order' => 9, 'level_name' => 'Cetak & Softcopy'],
-            ],
-        2 => [
-                ['level_order' => 1, 'level_name' => 'Konsultasi'],
-                ['level_order' => 2, 'level_name' => 'Rencana Survei'],
-                ['level_order' => 3, 'level_name' => 'Survei'],
-                ['level_order' => 4, 'level_name' => 'Penawaran Pembuatan RAB'],
-                ['level_order' => 5, 'level_name' => 'Invoice RAB'],
-                ['level_order' => 6, 'level_name' => 'Proses Pengerjaan RAB'],
-            ],
-        3 => [
-                ['level_order' => 1, 'level_name' => 'Konsultasi'],
-                ['level_order' => 2, 'level_name' => 'Rencana Survei'],
-                ['level_order' => 3, 'level_name' => 'Survei'],
-                ['level_order' => 4, 'level_name' => 'Penawaran Jasa Build'],
-                ['level_order' => 5, 'level_name' => 'Kontrak Kerja'],
-                ['level_order' => 6, 'level_name' => 'Invoice Tahap 1'],
-                ['level_order' => 7, 'level_name' => 'Pelaksanaan'],
-                ['level_order' => 8, 'level_name' => 'Serah Terima'],
-            ],
-        default => throw new \Exception('Jenis proyek tidak valid'),
-    };
+    $template = ProjectTypeLevel::where('project_type_id', $this->project_type_id) // sesuaikan nama kolom FK
+        ->orderBy('level_order')
+        ->get(['level_order', 'level_name']);
 
-    $this->levels()->createMany($levels);
+    if ($template->isEmpty()) {
+        throw new \Exception(
+            'Step untuk jenis proyek ini belum diatur di pengaturan Jenis Proyek.'
+        );
+    }
+
+    $this->levels()->createMany(
+        $template->map(fn ($lvl) => [
+            'level_order' => $lvl->level_order,
+            'level_name'  => $lvl->level_name,
+        ])->toArray()
+    );
 }
 public function getKurvaSData()
 {

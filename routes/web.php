@@ -25,7 +25,7 @@ use App\Http\Controllers\InvestorController;
 use App\Http\Controllers\ArchitectController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\WarehouseController;
-use App\Http\Controllers\ProductColorController;
+use App\Http\Controllers\ProjectTypeController;
 use App\Http\Controllers\ProductBrandController;
 use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\ProductCategoryController;
@@ -268,7 +268,7 @@ Route::post('/switch-role', [RoleSwitchController::class, 'switch'])
     ->middleware('auth')
     ->name('switch.role');
 
-route::resource('/product_colors', ProductColorController::class);
+route::resource('/project_types', ProjectTypeController::class);
 route::resource('/product_brands', ProductBrandController::class);
 route::resource('/product_categories', ProductCategoryController::class);
 route::resource('/product_types', ProductTypeController::class);

@@ -18,7 +18,7 @@
     <div class="page-body">
         <div class="container-xl">
             @include('projects.components.timeline-horizontal')
-                @php
+                {{-- @php
                 use Illuminate\Support\Facades\Storage;
                     $rab = $project?->rab;
                     $planning = $project?->planning;
@@ -59,7 +59,7 @@
                             $invoiceFinal = $project?->invoices
                                 ->where('invoice_type', 'final')
                                 ->first();
-                @endphp
+                @endphp --}}
             @if($activeStep == 1)
             <div id="project" class="step-section">
                 <div class="card shadow-sm border-0 mb-4">
@@ -95,8 +95,8 @@
                 <div id="form-konsultasi" class="step-section">
                     <div class="card shadow-sm border-0 mb-4">
                         <div class="card-body px-5 py-4">
-                            <h3 class="mb-4 fw-bold">1. Form Konsultasi</h3>
-                            @include('projects.steps.consultation-form')
+                            <h3 class="mb-4 fw-bold">1. Form Penawaran Harga</h3>
+                            @include('projects.steps.rab-process')
                         </div>
                     </div>
                 </div>  
@@ -208,7 +208,7 @@
                     </x-collapse-card>
                 @endif
             </div>
-            <div id="offer" class="step-section">
+            {{-- <div id="offer" class="step-section">
                 @if($activeStep == 5)
                     <div class="card shadow-sm border-0 mb-4">
                         <div class="card-body px-5 py-4">
@@ -263,8 +263,8 @@
                             @endif
                     </x-collapse-card>    
                 @endif
-            </div>
-            @if($activeStep >= 6 && $project->offer && in_array($project->project_type, [1, 3]))
+            </div> --}}
+            {{-- @if($activeStep >= 6 && $project->offer && in_array($project->project_type, [1, 3]))
             <div id="kontrak" class="step-section">
                 <x-collapse-card :title="$contractTitle" target="kontrak-body">
                         <div class="d-flex gap-2">
@@ -312,8 +312,8 @@
                             @endif
                         </div>
                 </x-collapse-card>
-            </div>    
-            @endif
+            </div>     --}}
+            {{-- @endif
             @if(
                 ($project?->project_type == 1 && $activeStep >= 7 && $project->offer->approved_at)
                 ||
@@ -406,7 +406,7 @@
                         </div>
                 </x-collapse-card>
             </div>
-            @endif
+            @endif --}}
 
             @if(
                 ($project?->project_type == 1 && $activeStep >= 8 && $project->offer->approved_at)
@@ -612,7 +612,6 @@
 <script>
     $(document).ready(function() {
         $('.select2').select2({
-            placeholder: "-- Pilih --",
             width: '100%'
         });
     });
@@ -1051,80 +1050,6 @@ document.addEventListener('click', function (e) {
     tbody.querySelectorAll('tr').forEach((tr, i) => {
         tr.querySelector('.row-no').textContent = i + 1;
     });
-});
-</script>
-<script>
-let rabLoaded = false;
-let isEditMode = false;
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    const view = document.getElementById("rab-view");
-    const edit = document.getElementById("rab-edit");
-
-    const btnEdit = document.getElementById("btn-edit-rab");
-    const btnSave = document.getElementById("btn-save-rab");
-    const btnCancel = document.getElementById("btn-cancel-rab");
-
-    function enterEditMode() {
-
-        view.style.display = "none";
-        edit.style.display = "block";
-
-        btnEdit.classList.add("d-none");
-        btnSave.classList.remove("d-none");
-        btnCancel.classList.remove("d-none");
-
-        if (!rabLoaded) {
-
-            const rabId = @json($rab?->id);
-
-            fetch(`/rab/${rabId}/structure`)
-                .then(res => res.json())
-                .then(data => {
-
-                    loadExistingRab(data);
-
-                    setTimeout(() => {
-                        initRabEdit();
-                    }, 100);
-
-                    rabLoaded = true;
-                });
-
-        } else {
-
-            setTimeout(() => {
-                initRabEdit();
-            }, 100);
-
-        }
-
-        isEditMode = true;
-    }
-
-    function exitEditMode() {
-
-        edit.style.display = "none";
-        view.style.display = "block";
-
-        btnEdit.classList.remove("d-none");
-        btnSave.classList.add("d-none");
-        btnCancel.classList.add("d-none");
-
-        isEditMode = false;
-    }
-
-    btnEdit.addEventListener("click", enterEditMode);
-
-    btnCancel.addEventListener("click", () => {
-
-        // kalau ingin reload data dari server saat cancel
-        // location.reload();
-
-        exitEditMode();
-    });
-
 });
 </script>
 

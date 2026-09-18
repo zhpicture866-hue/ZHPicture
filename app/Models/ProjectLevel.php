@@ -13,7 +13,7 @@ class ProjectLevel  extends Model
 
 
     public $timestamps = false;
-
+    protected $table = 'zhpicture.project_levels';
     protected $fillable = [
         'project_id',
         'level_order',
@@ -29,7 +29,7 @@ public function project()
     
     public function employees()
     {
-        return $this->belongsToMany(Employee::class, 'project_level_employee');
+        return $this->belongsToMany(Employee::class, 'zhpicture.project_level_employee');
     }
 
 }

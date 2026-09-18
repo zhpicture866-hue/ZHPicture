@@ -23,34 +23,36 @@
                     <form action="{{ route('permissions.store') }}" method="POST">
                         @csrf
                         <input type="hidden" name="guard_name" value="web">
-                    <div class="mb-3">
-                        <label class="form-label">Nama Permission</label>
-                        <input
-                            type="text"
-                            name="name"
-                            class="form-control @error('name') is-invalid @enderror"
-                            value="{{ old('name') }}"
-                            placeholder="contoh: tambah data user"
-                            required>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Nama Permission</label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    class="form-control @error('name') is-invalid @enderror"
+                                    value="{{ old('name') }}"
+                                    placeholder="contoh: tambah data user"
+                                    required>
 
-                        @error('name')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Nama Kelompok</label>
-                        <input
-                            type="text"
-                            name="modules"
-                            class="form-control @error('modules') is-invalid @enderror"
-                            value="{{ old('modules') }}"
-                            placeholder="contoh: User"
-                            required>
+                                @error('name')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="mb-3 col-md-6">
+                                <label class="form-label">Nama Kelompok</label>
+                                <input
+                                    type="text"
+                                    name="modules"
+                                    class="form-control @error('modules') is-invalid @enderror"
+                                    value="{{ old('modules') }}"
+                                    placeholder="contoh: User"
+                                    required>
 
-                        @error('modules')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
+                                @error('modules')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
                         <button type="submit" class="btn btn-success">Simpan</button>
                     </form>
                 </div>

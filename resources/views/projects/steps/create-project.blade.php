@@ -30,13 +30,16 @@
             
             <div class="col-md-2">
                 <label class="form-label required">Jenis Proyek</label>
-                <select name="project_type" 
-                        class="form-select select2 @error('project_type') is-invalid @enderror" 
+                <select name="project_type"
+                        class="form-select select2 @error('project_type') is-invalid @enderror"
                         required>
                     <option value="">-- Pilih --</option>
-                    <option value="1" {{ old('project_type') == '1' ? 'selected' : '' }}>Desain</option>
-                    <option value="2" {{ old('project_type') == '2' ? 'selected' : '' }}>RAB</option>
-                    <option value="3" {{ old('project_type') == '3' ? 'selected' : '' }}>Build</option>
+                    @foreach($projectTypes as $type)
+                        <option value="{{ $type->id }}"
+                            {{ old('project_type', $project->project_type ?? '') == $type->id ? 'selected' : '' }}>
+                            {{ $type->name }}
+                        </option>
+                    @endforeach
                 </select>
                 @error('project_type')
                     <div class="invalid-feedback">{{ $message }}</div>

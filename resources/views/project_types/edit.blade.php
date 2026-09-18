@@ -1,5 +1,39 @@
-{{-- Penting --}}
 @extends('tablar::page')
+
+@section('content')
+<div class="page-header d-print-none mb-4">
+    <div class="container-xl">
+        <div class="row align-items-center">
+            <div class="col d-flex align-items-center">
+                <a href="{{ route('project_types.index') }}" class="btn btn-dark d-flex align-items-center">
+                    <i class="ti ti-arrow-left"></i>
+                </a>
+                
+                    <h2 class="page-title mb-0">Edit Jenis Proyek</h2>
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div class="page-body">
+        <div class="container-xl">
+            <div class="row row-deck row-cards">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <form action="{{ route('project_types.update', $projectType) }}" method="POST">
+                                @csrf
+                                @method('PUT')
+                                @include('project_types._form')
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+{{-- @extends('tablar::page')
 
 @section('content')
     <!-- Page header -->
@@ -95,14 +129,14 @@
                                                 <label class="form-label">Nama Sekolah</label>
                                                 <input type="text" name="institution_name" class="form-control" value="{{ old('institution_name', $pieces->institution_name) }}">
                                     </div>
-                                </div> --}}
+                                </div> 
 
 
                         <div class="d-flex justify-content-between">
                             <a href="{{ route('pieces.index') }}" class="btn btn-secondary">Batal</a>
                             <button type="submit" class="btn btn-success">Simpan Perubahan</button>
                         </div>
-                    </form>
+                        </form>
  
 
                         </div>
@@ -111,4 +145,4 @@
             </div>
         </div>
     </div>
-@endsection
+@endsection --}}
