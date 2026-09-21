@@ -203,9 +203,10 @@ class ProjectController extends Controller
         return Project::with([
             'customer.user',
             'employee',
+            'projectType',
             'levels',
             'rab.items', // header penawaran + itemnya
-            'invoices',
+            // 'invoices',
         ])->findOrFail($projectId);
     }
 
@@ -356,9 +357,6 @@ class ProjectController extends Controller
         return array_merge($data, $merge);
     }
 
-    /**
-     * ================== CRUD DASAR ==================
-     */
     public function store(ProjectRequest $request)
     {
         abort_if(auth()->user()->cannot('lihat daftar proyek'), 403);
@@ -453,9 +451,17 @@ class ProjectController extends Controller
     public function update(Request $request, Project $project)
     {
         abort_if(auth()->user()->cannot('lihat daftar proyek'), 403);
-
-        $project->update($request->all());
-
+ 
+        $data = $request->all();
+ 
+        // project_type dikunci begitu project sudah punya level (sudah lewat generateLevels()),
+        // jadi berapapun value yang dikirim, abaikan — tetap pakai yang lama.
+        if ($project->levels()->exists()) {
+            unset($data['project_type']);
+        }
+ 
+        $project->update($data);
+ 
         return back()->with('success', 'Data proyek berhasil diperbarui!');
     }
 

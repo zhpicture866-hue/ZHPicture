@@ -57,10 +57,11 @@
 
 <button type="button" id="add-level" class="btn btn-sm btn-success mt-1">+ Tambah Step</button>
 
-<div class="mt-4">
-    <button type="submit" class="btn btn-primary">Simpan</button>
-    <a href="{{ route('project_types.index') }}" class="btn btn-secondary">Batal</a>
-</div>
+                    <div class="text-end mt-5">
+                        <button type="submit" class="btn btn-dark px-4">
+                            <i class="ti ti-device-floppy me-1"></i> Simpan Data
+                        </button>
+                    </div>
 
 @push('js')
 <script>

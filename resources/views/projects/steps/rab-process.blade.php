@@ -1,21 +1,35 @@
 @can('lihat daftar proyek')
 <form id="rabForm" action="{{ route('projects.rab.store') }}" method="POST" enctype="multipart/form-data">
     @csrf
-                        @if ($errors->any())
-                                        <div class="alert alert-danger">
-                                            <ul class="mb-0">
-                                                @foreach ($errors->all() as $error)
-                                                    <li>{{ $error }}</li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
-                                    @endif
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <input type="hidden" name="project_id" value="{{ $project->id }}">
 
     {{-- <h4 class="fw-bold mb-3">Informasi Pembuatan Rab</h4> --}}
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label>Nomor Penawaran</label>
+            <input type="text" name="offer_number" class="form-control" value="{{ old('offer_number') ?? '' }}" placeholder="Auto Generate" readonly>
 
-    <div class="row g-3">
+        </div>
+        <div class="col-md-4">
+            <label>Tanggal Penawaran</label>
+            <input type="date" name="offer_date" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+            <label>Nama Customer</label>
+            <input type="text" name="contact_name" value="{{ $project->customer->user->fullname }}" class="form-control">
+        </div>
+    </div>
+    {{-- <div class="row g-3">
         <div class="col-md-3">
             <label class="form-label">Project</label>
             <input type="text" name="project_name" value="{{ old('project_name', $project->project_name ?? '') }}" class="form-control">
@@ -32,34 +46,7 @@
             <label class="form-label">Phone</label>
             <input type="text" name="contact_phone" value="{{ old('contact_phone', $project->customer->user->phone ?? '') }}" class="form-control">
         </div>
-        {{-- <div class="col-md-2">
-            <label class="form-label">Profit (%)</label>
-
-            <div class="input-group">
-                <input type="number"
-                    class="form-control"
-                    id="rab_profit_display"
-                    name="profit"
-                    min="0"
-                    step="0.01"
-                    value="{{ old('profit', 0) }}">
-            </div>
-        </div>
-
-        <div class="col-md-2">
-            <label class="form-label">Overhead (%)</label>
-
-            <div class="input-group">
-                <input type="number"
-                    class="form-control"
-                    id="rab_overhead_display"
-                    name="overhead"
-                    min="0"
-                    step="0.01"
-                    value="{{ old('overhead', 0) }}">
-            </div>
-        </div> --}}
-    </div>
+    </div> --}}
   
     <div class="row mb-4 mt-3">
 
@@ -88,12 +75,6 @@
                         onclick="openAddRabItemModal()">
                     + Tambah Item
                 </button>
-                <button type="button"
-                        class="btn btn-dark btn-sm"
-                        onclick="openImportRabItemModal()">
-                    + Impor dari Excel
-                </button>
-
             </div>
 
         </div>
@@ -105,10 +86,9 @@
                 <colgroup>
                     <col style="width: 60px">
                     <col>
-                    <col style="width: 100px">
+                    <col style="width: 60px">
                     <col style="width: 130px">
                     <col style="width: 180px">
-                    <col style="width: 200px">
                     <col style="width: 60px">
                 </colgroup>
 
@@ -117,20 +97,17 @@
                         <th>NO</th>
                         <th>Nama Produk</th>
                         <th>Qty</th>
-                        <th>Day</th>
                         <th>Harga</th>
                         <th>JUMLAH</th>
                         <th></th>
                     </tr>
                 </thead>
 
-                <tbody id="rab_offerItemsBody">
-                    {{-- Item RAB dibuat oleh JavaScript --}}
-                </tbody>
+                <tbody id="rab_offerItemsBody"></tbody>
 
                 <tfoot>
                     <tr>
-                        <th colspan="5" class="text-end">
+                        <th colspan="4" class="text-end">
                             SUBTOTAL
                         </th>
 
@@ -141,7 +118,7 @@
                     </tr>
 
                     <tr>
-                        <th colspan="5" class="text-end">
+                        <th colspan="4" class="text-end">
                             DISCOUNT
                         </th>
 
@@ -158,7 +135,7 @@
                     </tr>
 
                     <tr>
-                        <th colspan="5" class="text-end">
+                        <th colspan="4" class="text-end">
                             SUBTOTAL AFTER DISCOUNT
                         </th>
 
@@ -169,7 +146,7 @@
                     </tr>
 
                     <tr>
-                        <th colspan="5" class="text-end">
+                        <th colspan="4" class="text-end">
                             TAX RATE (%)
                         </th>
 
@@ -185,7 +162,7 @@
                     </tr>
 
                     <tr>
-                        <th colspan="5" class="text-end">
+                        <th colspan="4" class="text-end">
                             TOTAL TAX
                         </th>
 
@@ -196,7 +173,7 @@
                     </tr>
 
                     <tr>
-                        <th colspan="5" class="text-end">
+                        <th colspan="4" class="text-end">
                             SHIPPING / HANDLING
                         </th>
 
@@ -213,7 +190,7 @@
                     </tr>
 
                     <tr>
-                        <th colspan="5" class="text-end">
+                        <th colspan="4" class="text-end">
                             GRAND TOTAL
                         </th>
 
@@ -230,36 +207,104 @@
         </div>
 
     </div>
-    <div class="modal fade" id="uraianGalleryModal">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content gambar-modal">
+    <div class="modal fade" id="addRabItemModal" tabindex="-1" aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered">
+
+            <div class="modal-content">
 
                 <div class="modal-header border-0">
+
                     <div>
-                    <h5 class="modal-title fw-semibold" id="modalTitle"></h5>
-                    <small class="text-muted">Upload dokumentasi pekerjaan</small>
+                        <h5 class="modal-title fw-bold">
+                            Tambah Item RAB
+                        </h5>
+
+                        <small class="text-muted">
+                            Masukkan produk yang akan ditambahkan ke RAB
+                        </small>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal">
+                    </button>
+
                 </div>
 
+
                 <div class="modal-body">
-                    <div class= "upload-area mb-3">
-                    <input type="file"
-                        multiple
-                        accept="image/*"
-                        class="form-control mb-3"
-                        id="uraianImageInput">
+
+                    <div class="mb-3">
+
+                        <label class="form-label fw-semibold">
+                            Deskripsi Pekerjaan
+                        </label>
+
+                        <div id="description-editor"></div>
+
+                        <textarea id="rab_item_description"
+                                class="d-none"></textarea>
+
                     </div>
 
-                    <div id="uraianGallery" class="gambar-preview">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label required fw-semibold">
+                                Qty
+                            </label>
+
+                            <input type="text"
+                                id="rab_item_volume"
+                                class="form-control"
+                                inputmode="decimal"
+                                placeholder="1">
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label required fw-semibold">
+                                Harga
+                            </label>
+
+                            <input type="text"
+                                id="rab_item_price_display"
+                                class="form-control"
+                                inputmode="decimal"
+                                placeholder="Rp 0,00">
+
+                            <input type="hidden"
+                                id="rab_item_price">
+
+                        </div>
                     </div>
+                </div>
+
+
+                <div class="modal-footer border-0">
+
+                    <button type="button"
+                            class="btn btn-light"
+                            data-bs-dismiss="modal">
+                        Batal
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-dark"
+                            onclick="saveRabItem()">
+                        Simpan Item
+                    </button>
 
                 </div>
 
             </div>
+
         </div>
+
     </div>
-        <div class="modal fade" id="addRabItemModal" tabindex="-1" aria-hidden="true">
+        {{-- <div class="modal fade" id="addRabItemModal" tabindex="-1" aria-hidden="true">
 
             <div class="modal-dialog modal-dialog-centered">
 
@@ -283,44 +328,13 @@
                         </button>
 
                     </div>
-
-
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label required fw-semibold">
-                                Lantai
-                            </label>
-                            <div id="floorSelectWrapper">
-                                <select id="rab_item_floor" class="form-select">
-                                    <option value="">
-                                        -- Pilih Lantai --
-                                    </option>
-                                </select>
-
-                            </div>
-                            <div id="floorInputWrapper" class="d-none">
-                                <div class="input-group">
-                                    <input type="text"
-                                        id="rab_item_floor_new"
-                                        class="form-control"
-                                        placeholder="Contoh: Lantai 2">
-
-                                    <button type="button"
-                                            class="btn btn-outline-secondary"
-                                            onclick="cancelNewFloor()">
-                                        Batal
-                                    </button>
-
-                                </div>
-
-                            </div>
-
-                        </div>
+                        <input type="hidden" id="rab_item_floor" value="Umum">
 
                         <div class="mb-3">
 
-                            <label class="form-label required fw-semibold">
-                                Kategori
+                            <label class="form-label fw-semibold">
+                                Kategori / Paket <span class="text-muted fw-normal">(opsional)</span>
                             </label>
 
                             <div id="categorySelectWrapper">
@@ -336,7 +350,7 @@
                                     <input type="text"
                                         id="rab_item_category_new"
                                         class="form-control"
-                                        placeholder="Contoh: PEKERJAAN STRUKTUR">
+                                        placeholder="Contoh: Silver, Gold, Platinum">
 
                                     <button type="button"
                                             class="btn btn-outline-secondary"
@@ -351,54 +365,56 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label required fw-semibold">
-                                Nama Pekerjaan
+                                Nama Produk
                             </label>
                             <input type="text"
                                 id="rab_item_job_name"
                                 class="form-control"
-                                placeholder="Contoh: Pekerjaan Pembersihan Lapangan">
+                                placeholder="Contoh: Foto Wedding Syar'i (Silver)">
 
                         </div>
 
                         <div class="mb-3">
 
                             <label class="form-label fw-semibold">
-                                Sub Kategori
+                                Deskripsi
                             </label>
-
+                                <div id="description-editor"></div>
                             <textarea id="rab_item_description"
-                                    class="form-control"
-                                    rows="2"
-                                    placeholder="Contoh: Pekerjaan Kolom K1"></textarea>
+                                    class="d-none">{{ old('rab_item_description') }}</textarea>
 
                         </div>
 
                         <div class="row g-3 mb-3">
 
-                            <div class="col-md-7">
+                            <div class="col-md-6">
 
                                 <label class="form-label required fw-semibold">
-                                    Volume
+                                    Qty
                                 </label>
 
                                 <input type="text"
                                     id="rab_item_volume"
                                     class="form-control"
                                     inputmode="decimal"
-                                    placeholder="0">
+                                    placeholder="1">
+
+                                <input type="hidden" id="rab_item_satuan" value="paket">
 
                             </div>
 
-                            <div class="col-md-5">
+                            <div class="col-md-6">
 
                                 <label class="form-label required fw-semibold">
-                                    Satuan
+                                    Day
                                 </label>
 
-                                <input type="text"
-                                    id="rab_item_satuan"
+                                <input type="number"
+                                    id="rab_item_day"
                                     class="form-control"
-                                    placeholder="m2">
+                                    min="1"
+                                    step="1"
+                                    placeholder="1">
 
                             </div>
 
@@ -407,7 +423,7 @@
                         <div class="mb-3">
 
                             <label class="form-label fw-semibold">
-                                Harga Satuan Dasar
+                                Harga
                                 <span class="text-danger">*</span>
                             </label>
 
@@ -443,87 +459,7 @@
 
             </div>
 
-        </div>
-        <div class="modal fade"
-            id="importRabItemModal"
-            tabindex="-1"
-            aria-hidden="true">
-
-            <div class="modal-dialog modal-dialog-centered">
-
-                <div class="modal-content">
-
-                    <div class="modal-header border-0">
-
-                        <div>
-                            <h5 class="modal-title fw-bold">
-                                Import RAB dari Excel
-                            </h5>
-
-                            <small class="text-muted">
-                                Import item RAB menggunakan file Excel
-                            </small>
-                        </div>
-
-                        <button type="button"
-                                class="btn-close"
-                                data-bs-dismiss="modal">
-                        </button>
-
-                    </div>
-
-
-                    <div class="modal-body">
-
-                        <div class="mb-3">
-
-                            <label class="form-label fw-semibold">
-                                File Excel
-                            </label>
-
-                            <input type="file"
-                                id="rab_import_file"
-                                class="form-control"
-                                accept=".xlsx,.xls">
-
-                            <div class="form-text">
-                                Format yang diperbolehkan: .xlsx atau .xls
-                            </div>
-
-                        </div>
-
-
-                        <div id="rabImportPreview">
-                        </div>
-                        <div id="rabImportError"
-                            class="alert alert-danger d-none mt-3">
-                        </div>
-                    </div>
-
-
-                    <div class="modal-footer border-0">
-
-                        <button type="button"
-                                class="btn btn-light"
-                                data-bs-dismiss="modal">
-                            Batal
-                        </button>
-
-                        <button type="button"
-                                id="btnConfirmImportRab"
-                                class="btn btn-dark"
-                                onclick="importRabFromExcel()"
-                                disabled>
-                            Import RAB
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
+        </div> --}}
         <input type="hidden" name="profit" id="rab_profit">
         <input type="hidden" name="overhead" id="rab_overhead">
         <input type="hidden" name="subtotal" id="rab_subtotal">
@@ -546,22 +482,27 @@
     let itemCounter = 0;
     let importedRabItems = [];
 
+    let rabDescriptionEditor = null;
+
     document.addEventListener('DOMContentLoaded', function () {
 
-        const fileInput =
-            document.getElementById('rab_import_file');
+        rabDescriptionEditor = new Quill('#description-editor', {
+            theme: 'snow',
 
-        if (!fileInput) {
-            console.error(
-                '#rab_import_file tidak ditemukan.'
-            );
-            return;
-        }
+            placeholder: 'Tuliskan deskripsi produk...',
 
-        fileInput.addEventListener(
-            'change',
-            handleRabExcelFile
-        );
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [
+                        { list: 'ordered' },
+                        { list: 'bullet' }
+                    ],
+                    ['link'],
+                    ['clean']
+                ]
+            }
+        });
 
     });
 
@@ -1700,16 +1641,13 @@
         return select.value.trim();
     }
     function openAddRabItemModal() {
-        renderFloorOptions();
 
-        renderCategoryOptions();
+        if (rabDescriptionEditor) {
+            rabDescriptionEditor.setContents([]);
+        }
 
-        document.getElementById('rab_item_floor').value = '';
-        document.getElementById('rab_item_category').value = '';
-        document.getElementById('rab_item_job_name').value = '';
         document.getElementById('rab_item_description').value = '';
         document.getElementById('rab_item_volume').value = '';
-        document.getElementById('rab_item_satuan').value = '';
 
         const price = document.getElementById('rab_item_price_display');
 
@@ -1725,119 +1663,68 @@
         modal.show();
     }
 
-    function openImportRabItemModal() {
-        const modalElement = document.getElementById('importRabItemModal');
+function saveRabItem() {
 
-        if (!modalElement) {
-            console.error('Modal importRabItemModal tidak ditemukan!');
-            return;
-        }
+    const description = rabDescriptionEditor
+        ? rabDescriptionEditor.root.innerHTML.trim()
+        : '';
 
-        // Reset input file
-        const fileInput = document.getElementById('rab_import_file');
+    const volumeInput =
+        document.getElementById('rab_item_volume').value;
 
-        if (fileInput) {
-            fileInput.value = '';
-        }
+    const volume =
+        parseDecimal(volumeInput);
 
-        const preview = document.getElementById('rabImportPreview');
+    const basePrice =
+        parseRupiah(
+            document.getElementById('rab_item_price_display').value
+        );
 
-        if (preview) {
-            preview.innerHTML = '';
-        }
 
-        const modal = new bootstrap.Modal(modalElement);
-
-        modal.show();
+    if (volume <= 0) {
+        alert('Qty harus lebih besar dari 0.');
+        document.getElementById('rab_item_volume').focus();
+        return;
     }
 
-    function saveRabItem() {
-
-        const floor = getSelectedFloor();
-
-        const category = getSelectedCategory();
-
-        const jobName = document
-            .getElementById('rab_item_job_name')
-            .value
-            .trim();
-
-        const description = document
-            .getElementById('rab_item_description')
-            .value
-            .trim();
-        const volumeInput = document.getElementById('rab_item_volume').value;
-        const volume = parseDecimal(volumeInput);
-        const satuan = document.getElementById('rab_item_satuan').value.trim();
-        const basePrice = parseRupiah(document.getElementById('rab_item_price_display').value);
-
-        if (!floor) {
-            alert('Lantai wajib diisi.');
-            document.getElementById('rab_item_floor').focus();
-            return;
-        }
-
-        if (!category) {
-            alert('Kategori pekerjaan wajib diisi.');
-            document.getElementById('rab_item_category').focus();
-            return;
-        }
-
-        if (!jobName) {
-            alert('Nama pekerjaan wajib diisi.');
-            document.getElementById('rab_item_job_name').focus();
-            return;
-        }
-
-        if (!satuan) {
-            alert('Satuan wajib diisi.');
-            document.getElementById('rab_item_satuan').focus();
-            return;
-        }
-
-        if (volume <= 0) {
-            alert('Volume harus lebih besar dari 0.');
-            document.getElementById('rab_item_volume').focus();
-            return;
-        }
-
-        if (basePrice < 0) {
-            alert('Harga satuan tidak valid.');
-            document.getElementById('rab_item_price_display').focus();
-            return;
-        }
-
-        const price = calculateItemPrice(basePrice);
-
-        const total = volume * price;
-
-        rabItems.push({
-            temp_id: 'item_' + (++itemCounter),
-            floor_name: floor,
-            category_name: category,
-            job_name: jobName,
-            description: description,
-            satuan: satuan,
-            volume: volume,
-            base_price: basePrice,
-            price: price,
-            total: total,
-            order_no: rabItems.length + 1
-        });
-
-        renderRabItems();
-        renderFloorOptions();
-        renderCategoryOptions(floor);
-        calculateSummary();
-
-        const modalElement = document.getElementById('addRabItemModal');
-
-        const modal = bootstrap.Modal.getInstance(modalElement);
-
-        if (modal) {
-            modal.hide();
-        }
+    if (basePrice < 0) {
+        alert('Harga tidak valid.');
+        document.getElementById('rab_item_price_display').focus();
+        return;
     }
+
+
+    const price = calculateItemPrice(basePrice);
+
+    const total = volume * price;
+
+
+    rabItems.push({
+        temp_id: 'item_' + (++itemCounter),
+        description: description,
+        volume: volume,
+        base_price: basePrice,
+        price: price,
+        total: total,
+        order_no: rabItems.length + 1
+    });
+
+
+    renderRabItems();
+
+    calculateSummary();
+
+
+    const modalElement =
+        document.getElementById('addRabItemModal');
+
+    const modal =
+        bootstrap.Modal.getInstance(modalElement);
+
+    if (modal) {
+        modal.hide();
+    }
+}
     function calculateItemPrice(basePrice) {
 
         basePrice = Number(basePrice) || 0;
@@ -1882,329 +1769,165 @@
 
         calculateSummary();
     }
-    function renderRabItems() {
+function renderRabItems() {
 
-        const tbody =
-            document.getElementById('rab_offerItemsBody');
+    const tbody = document.getElementById('rab_offerItemsBody');
 
-        if (!tbody) return;
+    if (!tbody) return;
 
-        tbody.innerHTML = '';
+    tbody.innerHTML = '';
 
-        if (rabItems.length === 0) {
+    if (rabItems.length === 0) {
 
-            tbody.innerHTML = `
-                <tr class="empty-rab-row">
-                    <td colspan="7"
-                        class="text-center text-muted py-5">
+        tbody.innerHTML = `
+            <tr class="empty-rab-row">
+                <td colspan="6"
+                    class="text-center text-muted py-5">
 
-                        Belum ada pekerjaan.
-                        <br>
+                    Belum ada item RAB.
 
-                    </td>
-                </tr>
-            `;
+                </td>
+            </tr>
+        `;
 
-            return;
-        }
-
-        const floors = [];
-
-        rabItems.forEach(item => {
-
-            const floorName =
-                item.floor_name || 'Tanpa Lantai';
-
-            if (!floors.includes(floorName)) {
-                floors.push(floorName);
-            }
-
-        });
-
-
-        let globalNo = 0;
-        let categoryLetterIndex = 0;
-
-
-        floors.forEach(floorName => {
-
-            tbody.insertAdjacentHTML(
-                'beforeend',
-                `
-                <tr class="floor-row table-light fw-bold"
-                    data-floor="${escapeHtml(floorName)}">
-
-                    <td colspan="7"
-                        class="py-2">
-
-                        <span class="me-2">
-                            🏢
-                        </span>
-
-                        ${escapeHtml(floorName)}
-
-                    </td>
-
-                </tr>
-                `
-            );
-
-            const floorItems =
-                rabItems.filter(item =>
-                    item.floor_name === floorName
-                );
-
-            const categories = [];
-
-            floorItems.forEach(item => {
-
-                const category =
-                    item.category_name || 'Tanpa Kategori';
-
-                if (!categories.includes(category)) {
-                    categories.push(category);
-                }
-
-            });
-
-
-            categories.forEach(categoryName => {
-
-                const categoryItems =
-                    floorItems.filter(item =>
-                        item.category_name === categoryName
-                    );
-
-
-                const letter =
-                    numberToLetters(categoryLetterIndex);
-
-                categoryLetterIndex++;
-
-                const categoryTotal =
-                    categoryItems.reduce(
-                        (sum, item) =>
-                            sum + Number(item.total || 0),
-                        0
-                    );
-
-
-                tbody.insertAdjacentHTML(
-                    'beforeend',
-                    `
-                    <tr class="category-row table-secondary fw-bold"
-                        data-floor="${escapeHtml(floorName)}"
-                        data-category="${escapeHtml(categoryName)}">
-
-                        <td>
-                            <span class="drag-handle me-2"
-                                style="cursor:move">
-
-                                <i class="ti ti-grip-vertical"></i>
-
-                            </span>
-
-                            ${letter}
-                        </td>
-
-                        <td colspan="4">
-
-                            ${escapeHtml(categoryName)}
-
-                        </td>
-
-                        <td>
-
-                            <input type="text"
-                                class="form-control subtotal-category"
-                                value="${formatRupiah(categoryTotal)}"
-                                readonly>
-
-                        </td>
-
-                        <td>
-
-                            <button type="button"
-                                    class="btn btn-sm btn-danger"
-                                    onclick="removeCategory(
-                                        '${escapeAttribute(floorName)}',
-                                        '${escapeAttribute(categoryName)}'
-                                    )">
-
-                                −
-
-                            </button>
-
-                        </td>
-
-                    </tr>
-                    `
-                );
-
-                let displayNo = 0;
-                let previousDescription = null;
- 
-                categoryItems.forEach((item) => {
- 
-                    const currentDescription =
-                        item.description || '';
- 
-                    const isNewGroup =
-                        !currentDescription ||
-                        currentDescription !== previousDescription;
- 
-                    if (isNewGroup) {
-                        displayNo++;
-                    }
- 
-                    previousDescription = currentDescription;
- 
-                    globalNo++;
- 
-                    tbody.insertAdjacentHTML(
-                        'beforeend',
-                        `
-                        <tr class="job-row"
-                            id="${item.temp_id}"
-                            data-id="${item.temp_id}"
-                            data-floor="${escapeHtml(item.floor_name)}"
-                            data-category="${escapeHtml(item.category_name)}">
- 
-                            <td class="text-center">
- 
-                                ${displayNo}
- 
-                            </td>
- 
-                            <td>
- 
-                                <div class="d-flex align-items-start gap-2">
- 
-                                    <span class="drag-handle"
-                                        style="cursor:move">
- 
-                                        <i class="ti ti-grip-vertical"></i>
- 
-                                    </span>
- 
-                                    <div>
- 
-                                        <div class="fw-medium">
- 
-                                            ${escapeHtml(item.job_name)}
- 
-                                        </div>
- 
-                                        ${
-                                            item.description
-                                                ?
-                                            `
-                                            <small class="text-muted">
-                                                ${escapeHtml(item.description)}
-                                            </small>
-                                            `
-                                                :
-                                            ''
-                                        }
- 
-                                    </div>
- 
-                                </div>
- 
-                            </td>
- 
- 
-                            <td>
- 
-                                ${escapeHtml(item.satuan)}
- 
-                            </td>
- 
- 
-                            <td>
- 
-                                <input type="number"
-                                    class="form-control vol"
-                                    value="${item.volume}"
-                                    min="0"
-                                    step="any"
-                                    onchange="updateItemVolume(
-                                        '${item.temp_id}',
-                                        this.value
-                                    )">
- 
-                            </td>
- 
- 
-                            <td>
- 
-                                <input type="text"
-                                    class="form-control harga"
-                                    value="${formatRupiah(item.price)}"
-                                    onchange="updateItemPrice(
-                                        '${item.temp_id}',
-                                        this
-                                    )">
- 
-                            </td>
- 
-                            <td>
- 
-                                <input type="text"
-                                    class="form-control total"
-                                    value="${formatRupiah(item.total)}"
-                                    readonly>
- 
-                            </td>
- 
- 
-                            <td>
- 
-                                <button type="button"
-                                        class="btn btn-sm btn-danger"
-                                        onclick="removeRabItem(
-                                            '${item.temp_id}'
-                                        )">
- 
-                                    −
- 
-                                </button>
- 
-                            </td>
- 
-                        </tr>
-                        `
-                    );
- 
-                });
- 
-
-            });
-
-        });
-
-        updateSortable();
+        return;
     }
 
-    function updateItemVolume(id, value) {
+    rabItems.forEach((item, index) => {
+
+        const description = item.description || '';
+
+        tbody.insertAdjacentHTML(
+            'beforeend',
+            `
+            <tr class="job-row"
+                id="${item.temp_id}"
+                data-id="${item.temp_id}">
+
+                <td class="text-center">
+                    ${index + 1}
+                </td>
+
+                <td>
+
+                    <div class="rab-description">
+
+                        ${
+                            description
+                                ? description
+                                : '<span class="text-muted">-</span>'
+                        }
+
+                    </div>
+
+                </td>
+
+                <td>
+
+                    <input type="number"
+                           class="form-control vol"
+                           value="${item.volume ?? 0}"
+                           min="0"
+                           step="any"
+                           onchange="updateItemVolume(
+                               '${item.temp_id}',
+                               this.value
+                           )">
+
+                </td>
+
+                <td>
+
+                    <input type="text"
+                           class="form-control harga"
+                           value="${formatRupiah(item.base_price)}"
+                           onchange="updateItemPrice(
+                               '${item.temp_id}',
+                               this
+                           )">
+
+                </td>
+
+                <td>
+
+                    <input type="text"
+                           class="form-control total"
+                           value="${formatRupiah(item.total)}"
+                           readonly>
+
+                </td>
+
+                <td class="text-center">
+
+                    <button type="button"
+                            class="btn btn-sm btn-danger"
+                            onclick="removeRabItem(
+                                '${item.temp_id}'
+                            )">
+
+                        −
+
+                    </button>
+
+                </td>
+
+            </tr>
+            `
+        );
+
+    });
+    updateSortable();
+}
+
+function updateItemVolume(id, value) {
+
+    const item = rabItems.find(
+        item => item.temp_id === id
+    );
+
+    if (!item) return;
+
+    item.volume = parseDecimal(value);
+
+    item.total =
+        Number(item.volume || 0) *
+        Number(item.price || 0);
+
+    renderRabItems();
+    calculateSummary();
+}
+
+    function updateItemDay(id, value) {
         const item =
             rabItems.find(item =>
                 item.temp_id === id
             );
         if (!item) return;
-        item.volume = Number(value) || 0;
-        item.total = item.volume * item.price;
+        item.day = parseInt(value, 10) || 1;
         renderRabItems();
         calculateSummary();
     }
 
     function updateItemPrice(id, element) {
-        const item = rabItems.find(item =>item.temp_id === id);
+
+        const item = rabItems.find(
+            item => item.temp_id === id
+        );
+
         if (!item) return;
-        const basePrice = parseRupiah(element.value);
+
+        const basePrice =
+            parseRupiah(element.value);
+
         item.base_price = basePrice;
-        item.price = calculateItemPrice(basePrice);
-        item.total = Number(item.volume || 0) * item.price;
+
+        item.price =
+            calculateItemPrice(basePrice);
+
+        item.total =
+            Number(item.volume || 0) *
+            Number(item.price || 0);
+
         renderRabItems();
         calculateSummary();
     }
@@ -2599,11 +2322,7 @@
         rabItems.forEach(
             (item, index) => {
                 const fields = {
-                    floor_name: item.floor_name,
-                    category_name: item.category_name,
-                    job_name: item.job_name,
                     description: item.description || '',
-                    satuan: item.satuan,
                     volume: item.volume,
                     base_price: item.base_price,
                     price: item.price,

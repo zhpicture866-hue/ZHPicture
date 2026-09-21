@@ -15,7 +15,6 @@ class ProjectRequest extends FormRequest
     {
         return [
             'project_name'      => 'required|string|max:255',
-            'project_type'      => 'required|integer',
             'project_location'  => 'required|string',
             'province_id'       => 'required|integer',
             'city_id'           => 'required|integer',
@@ -29,6 +28,15 @@ class ProjectRequest extends FormRequest
             'end_date'          => 'nullable|date|after_or_equal:start_date',
             'project_status'    => 'nullable|integer',
             'description'    => 'nullable|string',
+            'project_type' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    $exists = \DB::table('zhpicture.project_types')->where('id', $value)->exists();
+                    if (! $exists) {
+                        $fail('Jenis proyek tidak valid.');
+                    }
+                },
+            ],
         ];
     }
 }

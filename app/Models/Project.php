@@ -124,7 +124,7 @@ class Project extends Model
 
     public function rab()
 {
-    return $this->hasOne(RabProcess::class);
+    return $this->hasOne(OfferProcess::class);
 }
 
     public function finalDocument()
@@ -157,6 +157,11 @@ public function weeklyReports()
 {
     return $this->hasMany(WeeklyReport::class);
 }
+
+    public function projectType()
+    {
+        return $this->belongsTo(ProjectType::class, 'project_type');
+    }
 
 public function progressSnapshots()
 {
@@ -208,16 +213,16 @@ public function latestSurveyInvoice()
 
 public function generateLevels()
 {
-    $template = ProjectTypeLevel::where('project_type_id', $this->project_type_id) // sesuaikan nama kolom FK
+    $template = ProjectTypeLevel::where('project_type_id', $this->project_type) // <- kolom FK di project_type_levels tetap 'project_type_id', tapi VALUE-nya diambil dari $this->project_type (kolom asli di tabel projects)
         ->orderBy('level_order')
         ->get(['level_order', 'level_name']);
-
+ 
     if ($template->isEmpty()) {
         throw new \Exception(
             'Step untuk jenis proyek ini belum diatur di pengaturan Jenis Proyek.'
         );
     }
-
+ 
     $this->levels()->createMany(
         $template->map(fn ($lvl) => [
             'level_order' => $lvl->level_order,
@@ -225,96 +230,16 @@ public function generateLevels()
         ])->toArray()
     );
 }
-public function getKurvaSData()
-{
-    $weeks = count($this->week_labels);
 
-    $items = $this->buildItems()
-        ->with('weeklyProgresses')
-        ->get();
+protected $casts = [
+    'start_date' => 'datetime',
+    'end_date'   => 'datetime',
+];
 
-    $data = [];
-
-    for ($w=1; $w <= $weeks; $w++) {
-
-        $total = 0;
-
-        foreach ($items as $item) {
-
-            $sum = $item->weeklyProgresses
-                ->filter(fn($p) => $p->week_no <= $w)
-                ->sum('progress_percent');
-
-            $total += $sum * ($item->bobot_percent / 100);
-        }
-
-        $data[] = [
-            'week' => $w,
-            'progress' => round($total, 2)
-        ];
-    }
-
-    return $data;
-}
-public function getKurvaRencanaData()
-{
-    $weeks = count($this->week_labels);
-    $plans = $this->weeklyPlans->keyBy('week_no');
-
-    $jalan = 0;
-    $data = [];
-
-    for ($w=1; $w<=$weeks; $w++) {
-        $jalan += $plans[$w]->bobot_percent ?? 0;
-
-        $data[] = [
-            'week'=>$w,
-            'progress'=>round($jalan,2)
-        ];
-    }
-
-    return $data;
-}
-public function getWeekLabelsAttribute()
-{
-    if (!$this->start_date || !$this->end_date) return [];
-
-    $start = \Carbon\Carbon::parse($this->start_date);
-    $end   = \Carbon\Carbon::parse($this->end_date);
-
-    $labels = [];
-    $w = 1;
-
-    while ($start <= $end) {
-
-        $weekEnd = $start->copy()->addDays(6)->min($end);
-
-        $labels[] = [
-            'week_no' => $w,
-            'start'   => $start->format('d/m/Y'),   
-            'end'     => $weekEnd->format('d/m/Y'), 
-            'label'   => $start->format('d M') . ' - ' . $weekEnd->format('d M Y'),
-        ];
-
-        $start->addWeek();
-        $w++;
-    }
-
-    return $labels;
-}
 public function getFinalRouteAttribute()
 {
     return $this->project_type == 3
         ? route('projects.finals-build.store', $this->id)
         : route('projects.finals.store', $this->id);
-}
-public function getJobDurationAttribute()
-{
-    if (!$this->start_date || !$this->end_date) {
-        return null;
-    }
-
-    return Carbon::parse($this->start_date)
-        ->diffInDays(Carbon::parse($this->end_date)) + 1;
 }
 }

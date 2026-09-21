@@ -17,14 +17,27 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label required">Jenis Proyek</label>
-                    <select name="project_type" 
-                            class="form-select select2 @error('project_type') is-invalid @enderror" 
+                    @php
+                        // Sudah punya level = sudah pernah generateLevels() -> tipe tidak boleh diubah lagi
+                        $isLocked = $project && $project->levels->isNotEmpty();
+                    @endphp
+                    <select name="project_type"
+                            class="form-select select2 @error('project_type') is-invalid @enderror"
+                            @disabled($isLocked)
                             required>
                         <option value="">-- Pilih --</option>
-                        <option value="1" {{ old('project_type', $project->project_type) == '1' ? 'selected' : '' }}>Desain</option>
-                        <option value="2" {{ old('project_type', $project->project_type) == '2' ? 'selected' : '' }}>RAB</option>
-                        <option value="3" {{ old('project_type', $project->project_type) == '3' ? 'selected' : '' }}>Build</option>
+                        @foreach($projectTypes as $type)
+                            <option value="{{ $type->id }}"
+                                {{ old('project_type', $project?->project_type ?? '') == $type->id ? 'selected' : '' }}>
+                                {{ $type->name }}
+                            </option>
+                        @endforeach
                     </select>
+                    @if($isLocked)
+                        {{-- disabled select tidak ikut ter-submit, jadi kirim value asli lewat hidden input --}}
+                        <input type="hidden" name="project_type" value="{{ $project->project_type }}">
+                        <small class="text-muted">Jenis proyek tidak bisa diubah setelah proyek dibuat.</small>
+                    @endif
                     @error('project_type')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -41,6 +54,33 @@
                                 <input type="date" name="end_date" class="form-control"
                                     value="{{ old('end_date', $project->end_date) }}"
                                     pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label required">Tanggal & Waktu Mulai Event</label>
+
+                    <input
+                        type="text"
+                        name="start_date"
+                        id="start_date_edit"
+                        class="form-control"
+                        required
+                        value="{{ old('start_date', $project->start_date) }}"
+                        placeholder="DD-MM-YYYY HH:MM"
+                    >
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Tanggal & Waktu Akhir Event (Estimasi)</label>
+
+                    <input
+                        type="text"
+                        name="end_date"
+                        id="end_date_edit"
+                        class="form-control"
+                        value="{{ old('end_date', $project->end_date) }}"
+                        placeholder="DD-MM-YYYY HH:MM"
+                    >
                 </div>
 
                 <div class="col-md-4">
@@ -119,6 +159,29 @@
 </div>
 
 @push('js')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        flatpickr('#start_date_edit', {
+            enableTime: true,
+            dateFormat: 'Y-m-d H:i',
+            altInput: true,
+            altFormat: 'd-m-Y H:i',
+            time_24hr: true,
+            minuteIncrement: 5
+        });
+
+        flatpickr('#end_date_edit', {
+            enableTime: true,
+            dateFormat: 'Y-m-d H:i',
+            altInput: true,
+            altFormat: 'd-m-Y H:i',
+            time_24hr: true,
+            minuteIncrement: 5
+        });
+
+    });
+</script>
 <script>
 $(document).ready(function () {
     @if(isset($project))

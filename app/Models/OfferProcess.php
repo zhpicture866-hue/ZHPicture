@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class RabProcess extends Model
+class OfferProcess extends Model
 {
     protected $table = 'zhpicture.offer_process';
 

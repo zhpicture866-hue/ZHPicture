@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class RabProcessItem extends Model
+class OfferProcessItem extends Model
 {
     protected $table = 'zhpicture.offer_process_items';
 

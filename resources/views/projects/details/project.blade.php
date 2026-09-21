@@ -1,9 +1,4 @@
 @php
-    $type = [
-        '1'     => 'Desain',
-        '2'     => 'RAB',
-        '3'     => 'Build',
-    ];
     $status = [
         '1'     => 'Proses',
         '2'     => 'Revisi',
@@ -29,17 +24,27 @@
 
             <div class="col-md-2">
                 <label class="fw-semibold">Jenis Proyek</label>
-                <input type="text" class="form-control" value="{{ $type[$project->project_type] }}" readonly>
+                <input type="text" class="form-control" value="{{ $project->projectType->name ?? '-' }}" readonly>
             </div>
 
             <div class="col-md-3">
-                <label class="fw-semibold">Tanggal Mulai Proyek</label>
-                <input type="text" class="form-control" value="{{ \Carbon\Carbon::parse($project->start_date)->format('d/m/Y') }}" readonly>
+                <label class="fw-semibold">Tanggal Mulai Event</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    value="{{ $project->start_date?->format('d/m/Y H:i') }}"
+                    readonly
+                >
             </div>
 
             <div class="col-md-3">
-                <label class="fw-semibold">Tanggal Akhir Proyek(Estimasi)</label>
-                <input type="text" class="form-control" value="{{ \Carbon\Carbon::parse($project->end_date)->format('d/m/Y') }}" readonly>
+                <label class="fw-semibold">Tanggal Akhir Event (Estimasi)</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    value="{{ $project->end_date?->format('d/m/Y H:i') ?? '-' }}"
+                    readonly
+                >
             </div>
 
             {{-- <div class="col-md-2">

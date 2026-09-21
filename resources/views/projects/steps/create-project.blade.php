@@ -47,18 +47,30 @@
             </div>
 
             <div class="col-md-3">
-                <label class="form-label required">Tanggal Mulai Proyek</label>
-                            <input type="date" name="start_date" class="form-control" required
-                                value="{{ old('start_date') }}"
-                                pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD">
+                <label class="form-label required">Tanggal Mulai Event</label>
+
+                <input
+                    type="text"
+                    name="start_date"
+                    id="start_date"
+                    class="form-control"
+                    required
+                    value="{{ old('start_date') }}"
+                    placeholder="DD-MM-YYYY HH:MM"
+                >
             </div>
+
             <div class="col-md-3">
-                <label class="form-label">Tanggal Akhir Proyek (Estimasi)</label>
-                            <input type="date" name="end_date" class="form-control"
-                                value="{{ old('end_date') }}"
-                                pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD">
-                            {{-- <input type="text" id="tanggal" name="end_date" class="form-control" 
-                            placeholder="dd/mm/YYYY" value="{{ old('end_date') }}" required> --}}
+                <label class="form-label">Tanggal Akhir Event (Estimasi)</label>
+
+                <input
+                    type="text"
+                    name="end_date"
+                    id="end_date"
+                    class="form-control"
+                    value="{{ old('end_date') }}"
+                    placeholder="DD-MM-YYYY HH:MM"
+                >
             </div>
             {{-- <div class="col-md-2">
                 <label class="form-label">Status Proyek</label>
@@ -218,7 +230,30 @@
 @endcan
 
 @push('js')
-    <script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        flatpickr('#start_date', {
+            enableTime: true,
+            dateFormat: 'Y-m-d H:i',
+            altInput: true,
+            altFormat: 'd-m-Y H:i',
+            time_24hr: true,
+            minuteIncrement: 5
+        });
+
+        flatpickr('#end_date', {
+            enableTime: true,
+            dateFormat: 'Y-m-d H:i',
+            altInput: true,
+            altFormat: 'd-m-Y H:i',
+            time_24hr: true,
+            minuteIncrement: 5
+        });
+
+    });
+</script>
+<script>
 $(function () {
     initLocationCascade({
         prefix: '',

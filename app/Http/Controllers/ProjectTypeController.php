@@ -6,15 +6,11 @@ use App\Models\ProjectType;
 use App\Models\ProjectTypeLevel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
 use DB;
 
 class ProjectTypeController extends Controller
 {
-    /**
-     * ================== LIST ==================
-     */
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -143,7 +139,20 @@ class ProjectTypeController extends Controller
             'name'        => 'required|string|max:255',
             'code'        => [
                 'required', 'string', 'max:100', 'alpha_dash',
-                Rule::unique('zhpicture.project_types', 'code')->ignore($ignoreId),
+                function ($attribute, $value, $fail) use ($ignoreId) {
+                    // Dibuat manual (bukan Rule::unique) karena Rule::unique/exists
+                    // memecah string di tanda titik sebagai NAMA KONEKSI, bukan skema —
+                    // jadi 'zhpicture.project_types' akan dibaca sebagai koneksi
+                    // "zhpicture" yang tidak ada di config/database.php.
+                    $exists = DB::table('zhpicture.project_types')
+                        ->where('code', $value)
+                        ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('Kode jenis proyek ini sudah dipakai, pakai kode lain.');
+                    }
+                },
             ],
             'description' => 'nullable|string',
             'is_active'   => 'nullable|boolean',

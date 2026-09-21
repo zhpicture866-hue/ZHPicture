@@ -5,7 +5,7 @@
     <div class="container-xl">
         <div class="row align-items-center">
             <div class="col d-flex align-items-center">
-                <a href="{{ route('employees.index') }}" class="btn btn-dark d-flex align-items-center" style="margin-left: 30px;">
+                <a href="{{ route('employees.index') }}" class="btn btn-dark d-flex align-items-center">
                     <i class="ti ti-arrow-left"></i>
                 </a>
                 
@@ -363,7 +363,6 @@
     </div>
 </div>
 @endsection
-
 
 @push('js')
     <script>
