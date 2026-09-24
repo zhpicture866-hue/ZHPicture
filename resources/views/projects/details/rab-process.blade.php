@@ -32,7 +32,7 @@ function numberToLetters($num) {
             <div class="col-md-4">
                 <label class="fw-semibold">Tanggal Penawaran</label>
                 <input type="text" class="form-control" readonly
-                       value="{{ $rab->offer_date }}">
+                    value="{{ $rab->offer_date?->format('d/m/Y') ?? '-' }}">
             </div>
             <div class="col-md-4">
                 <label class="fw-semibold">Nama Customer</label>
@@ -47,18 +47,16 @@ function numberToLetters($num) {
                     <thead>
                         <tr>
                             <th width="5%" style="text-align: center;">NO</th>
-                            <th width="50%">URAIAN PEKERJAAN</th>
-                            <th width="10%" style="text-align: center;">QTY</th>
-                            <th width="17.5%" style="text-align: right;">HARGA SATUAN</th>
-                            <th width="17.5%" style="text-align: right;">JUMLAH HARGA</th>
+                            <th width="50%" style="text-align: center;">URAIAN PEKERJAAN</th>
+                            <th width="5%" style="text-align: center;">QTY</th>
+                            <th width="17.5%" style="text-align: center;">HARGA SATUAN</th>
+                            <th width="17.5%" style="text-align: center;">JUMLAH HARGA</th>
                         </tr>
                     </thead>
 
                     <tbody>
 
                         @php
-                            // Kategori tidak lagi dikelompokkan/ditampilkan di sini —
-                            // disamakan dengan form create/edit yang juga tidak nampilin kategori.
                             $items = $rab->items->sortBy('order_no')->values();
                             $itemNo = 1;
                             $lastDescription = null;
@@ -86,7 +84,7 @@ function numberToLetters($num) {
                             @endphp
 
                             <tr>
-                                <td align="center">
+                                <td class="text-center">
                                     @if($showNumber)
                                         {{ $currentNo }}
                                     @endif
@@ -94,13 +92,13 @@ function numberToLetters($num) {
                                 <td>
                                     {!! $item->description !!}
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     {{ rtrim(rtrim(number_format($item->volume, 5, '.', ''), '0'), '.') }}
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     Rp {{ number_format($item->price, 2, ',', '.') }}
                                 </td>
-                                <td class="text-end">
+                                <td class="text-center">
                                     Rp {{ number_format($item->total, 2, ',', '.') }}
                                 </td>
                             </tr>

@@ -1,5 +1,5 @@
 <form
-    action="{{ route('projects.invoice.store', $project->id) }}"
+    action="{{ route('projects.build-termin.store', $project->id) }}"
     method="POST"
     id="build-termin-form"
 >

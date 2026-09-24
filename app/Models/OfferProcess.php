@@ -29,6 +29,9 @@ class OfferProcess extends Model
         'analisa_version',
     ];
 
+    protected $casts = [
+        'offer_date' => 'date'
+    ];
         public function project()
     {
         return $this->belongsTo(Project::class);

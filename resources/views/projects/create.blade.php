@@ -47,32 +47,47 @@
                             @include('projects.details.project')
                         </div>
                         <div id="project-edit" style="display:none;">
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-secondary btn-cancel-view-edit mb-3"
-                                    data-view="project-view"
-                                    data-edit="project-edit">
-                                <i class="ti ti-x"></i> Batal
-                            </button>
                             @include('projects.edit.project-form')
+
+                            <div class="d-flex justify-content-between align-items-center mt-4">
+
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-secondary btn-cancel-view-edit"
+                                        data-view="project-view"
+                                        data-edit="project-edit">
+                                    <i class="ti ti-x me-1"></i>
+                                    Batal
+                                </button>
+
+                                <button type="submit"
+                                        form="project-edit-form"
+                                        class="btn btn-dark">
+                                    <i class="ti ti-device-floppy me-1"></i>
+                                    Simpan Perubahan Data
+                                </button>
+
+                            </div>
                         </div>
                     </x-collapse-card>
 
                 @php
-                    // Peta nama level -> partial. 'form' = tampilan interaktif/edit,
-                    // 'detail' = ringkasan (kalau null, berarti step ini gak butuh mode
-                    // ringkasan terpisah — partial 'form'-nya sendiri sudah pintar
-                    // menampilkan status akhir, misal step Invoice).
+                    // Peta nama level -> partial. 'create' = form kosong (dipakai step yg belum ada
+                    // datanya sama sekali), 'edit' = form dibuka lewat toggle "Edit" dari mode ringkas,
+                    // 'detail' = ringkasan (null = step ini gak butuh mode ringkas terpisah, partial
+                    // 'create'-nya sendiri sudah pintar menampilkan status akhir, misal step Invoice).
                     // Nambah project_type baru dengan step yang SAMA otomatis kepakai.
                     $stepViews = [
                         'Penawaran Harga' => [
-                            'form'    => 'projects.steps.rab-process',
+                            'create'  => 'projects.steps.rab-process',
+                            'edit'    => 'projects.edit.rab-process',
                             'detail'  => 'projects.details.rab-process',
                             'hasData' => (bool) ($project->rab && $project->rab->items()->exists()),
                             'action'  => '<button type="submit" form="rabForm" class="btn btn-dark" title="Simpan RAB"><i class="ti ti-device-floppy me-1"></i></button>',
                         ],
                         'Invoice' => [
-                            'form'    => 'projects.steps.invoice',
-                            'detail'  => null, // partial-nya sendiri sudah handle tampilan "sudah ada termin" vs "belum"
+                            'create'  => 'projects.steps.invoice',
+                            'edit'    => null, // partial 'create'-nya sendiri sudah handle tampilan "sudah ada termin" vs "belum"
+                            'detail'  => null,
                             'hasData' => false,
                             'action'  => null,
                         ],
@@ -117,25 +132,36 @@
                                     @include($config['detail'])
                                 </div>
                                 <div id="{{ $slug }}-edit" style="display:none;">
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-secondary btn-cancel-view-edit mb-3"
-                                            data-view="{{ $slug }}-view"
-                                            data-edit="{{ $slug }}-edit">
-                                        <i class="ti ti-x"></i> Batal
-                                    </button>
-                                    @include($config['form'])
+                                    
+                                    @include($config['edit'])
+                                    <div class="d-flex justify-content-between align-items-center mt-4">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary btn-cancel-view-edit me-2"
+                                                data-view="{{ $slug }}-view"
+                                                data-edit="{{ $slug }}-edit">
+                                            <i class="ti ti-x me-1"></i>
+                                            Batal
+                                        </button>
+
+                                        <button type="submit"
+                                                form="rab-edit-form"
+                                                class="btn btn-sm btn-dark">
+                                            <i class="ti ti-device-floppy me-1"></i>
+                                            Update Penawaran
+                                        </button>
+                                    </div>
                                 </div>
                             </x-collapse-card>
 
                         @else
-                            {{-- Step ini yang sedang dikerjakan / belum ada data -> langsung tampilkan form-nya --}}
+                            {{-- Step ini yang sedang dikerjakan / belum ada data -> langsung tampilkan form kosongnya --}}
                             <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body" :sticky="false">
                                 @if($config['action'])
                                     <x-slot:actions>
                                         {!! $config['action'] !!}
                                     </x-slot:actions>
                                 @endif
-                                @include($config['form'])
+                                @include($config['create'])
                             </x-collapse-card>
                         @endif
                     </div>
@@ -403,37 +429,190 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-    // Generic: buka mode edit. Pasang di tombol manapun dgn data-view & data-edit
-    // (dipakai bareng oleh section "Proyek" dan tiap step yang punya mode ringkas/edit).
     document.querySelectorAll(".btn-toggle-view-edit").forEach(btn => {
+
         btn.addEventListener("click", () => {
+
             const view = document.getElementById(btn.dataset.view);
             const edit = document.getElementById(btn.dataset.edit);
+
             if (!view || !edit) return;
+
             view.style.display = "none";
             edit.style.display = "block";
         });
+
     });
 
-    // Generic: batal, balik ke mode ringkas
     document.querySelectorAll(".btn-cancel-view-edit").forEach(btn => {
+
         btn.addEventListener("click", () => {
+
             const view = document.getElementById(btn.dataset.view);
             const edit = document.getElementById(btn.dataset.edit);
+
             if (!view || !edit) return;
+
             edit.style.display = "none";
             view.style.display = "block";
         });
+
+    });
+
+    let rabEditLoaded = false;
+
+    const rabId = @json($project->rab?->id);
+    const rabEdit = document.getElementById("penawaran-harga-edit");
+
+    if (!rabId || !rabEdit) return;
+
+
+    const btnRabEdit = document.querySelector(
+        '[data-edit="penawaran-harga-edit"]'
+    );
+
+    if (!btnRabEdit) return;
+
+
+    btnRabEdit.addEventListener("click", async () => {
+
+        if (rabEditLoaded) {
+
+            setTimeout(() => {
+                initRabEdit();
+            }, 100);
+
+            return;
+        }
+
+        try {
+
+            const response = await fetch(
+                `/rab/${rabId}/structure`
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            loadExistingRab(data);
+
+            setTimeout(() => {
+                initRabEdit();
+            }, 100);
+
+            rabEditLoaded = true;
+
+        } catch (error) {
+
+            console.error("Gagal memuat RAB:", error);
+
+            Swal.fire({
+                icon: "error",
+                title: "Gagal Memuat RAB",
+                text: "Data RAB gagal dimuat."
+            });
+
+        }
+
     });
 
 });
 </script>
+// {{-- <script>
+// document.addEventListener("DOMContentLoaded", () => {
 
+//     document.querySelectorAll(".btn-toggle-view-edit").forEach(btn => {
+//         btn.addEventListener("click", () => {
+//             const view = document.getElementById(btn.dataset.view);
+//             const edit = document.getElementById(btn.dataset.edit);
+//             if (!view || !edit) return;
+//             view.style.display = "none";
+//             edit.style.display = "block";
+//         });
+//     });
 
+//     // Generic: batal, balik ke mode ringkas
+//     document.querySelectorAll(".btn-cancel-view-edit").forEach(btn => {
+//         btn.addEventListener("click", () => {
+//             const view = document.getElementById(btn.dataset.view);
+//             const edit = document.getElementById(btn.dataset.edit);
+//             if (!view || !edit) return;
+//             edit.style.display = "none";
+//             view.style.display = "block";
+//         });
+//     });
+
+// });
+
+// let rabEditLoaded = false;
+
+// document.addEventListener("DOMContentLoaded", () => {
+
+//     const rabId = @json($project->rab?->id);
+
+//     if (!rabId) return;
+
+//     const rabEdit = document.getElementById("penawaran-harga-edit");
+
+//     if (!rabEdit) return;
+
+//     document
+//         .querySelector('[data-edit="penawaran-harga-edit"]')
+//         ?.addEventListener("click", async function () {
+
+//             if (rabEditLoaded) {
+
+//                 setTimeout(() => {
+//                     initRabEdit();
+//                 }, 100);
+
+//                 return;
+//             }
+
+//             try {
+
+//                 const response = await fetch(
+//                     `/rab/${rabId}/structure`
+//                 );
+
+//                 if (!response.ok) {
+//                     throw new Error(
+//                         `HTTP ${response.status}`
+//                     );
+//                 }
+
+//                 const data = await response.json();
+
+//                 loadExistingRab(data);
+
+//                 setTimeout(() => {
+//                     initRabEdit();
+//                 }, 100);
+
+//                 rabEditLoaded = true;
+
+//             } catch (error) {
+
+//                 console.error(error);
+
+//                 Swal.fire({
+//                     icon: "error",
+//                     title: "Gagal Memuat RAB",
+//                     text: "Data RAB gagal dimuat."
+//                 });
+
+//             }
+
+//         });
+
+// });
+// </script> --}}
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {

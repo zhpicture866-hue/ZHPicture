@@ -36,7 +36,7 @@
                     @if($isLocked)
                         {{-- disabled select tidak ikut ter-submit, jadi kirim value asli lewat hidden input --}}
                         <input type="hidden" name="project_type" value="{{ $project->project_type }}">
-                        <small class="text-muted">Jenis proyek tidak bisa diubah setelah proyek dibuat.</small>
+                        {{-- <small class="text-muted">Jenis proyek tidak bisa diubah setelah proyek dibuat.</small> --}}
                     @endif
                     @error('project_type')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -135,12 +135,6 @@
                     </div>
                 
             </div>
-
-            <div class="mt-4">
-                <button class="btn btn-dark">Simpan</button>
-                <button type="button" id="btn-cancel-project" class="btn btn-light btn-sm">Batal</button>
-            </div>
-
         </form>
     </div>
 </div>

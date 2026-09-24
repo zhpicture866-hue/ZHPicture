@@ -1673,7 +1673,7 @@ function renderRabItems() {
 
                 <td>
 
-                    <div class="rab-description">
+                    <div class="rab-description-preview">
 
                         ${
                             description
