@@ -10,11 +10,7 @@ class OfferProcessItem extends Model
     protected $table = 'zhpicture.offer_process_items';
 
     protected $fillable = [
-        'rab_process_id',
-        'floor_name',
-        'category_name',
-        'job_name',
-        'satuan',
+        'offer_process_id',
         'volume',
         'base_price',
         'price',

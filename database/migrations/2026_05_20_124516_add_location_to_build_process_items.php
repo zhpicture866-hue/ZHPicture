@@ -6,25 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('build_process_items', function (Blueprint $table) {
-            $table->integer('category_order')->nullable();
-            $table->integer('uraian_order')->nullable();
-            $table->integer('item_order')->nullable();
+        Schema::table('zhpicture.invoices', function (Blueprint $table) {
+            $table->unsignedInteger('termin_no')->default(1)->after('invoice_type');
+            $table->string('termin_label')->nullable()->after('termin_no'); // "DP", "Pelunasan", "Termin 1", dst
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('build_process_items', function (Blueprint $table) {
-            //
+        Schema::table('zhpicture.invoices', function (Blueprint $table) {
+            $table->dropColumn(['termin_no', 'termin_label']);
         });
     }
 };

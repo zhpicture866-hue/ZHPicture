@@ -229,7 +229,7 @@ label {
 
 /* item hover */
 .select2-results__option--highlighted {
-    background-color: #fbee47 !important;
+    background-color: #58595b !important;
     color: #000 !important;
 }
 
@@ -578,12 +578,12 @@ z-index: 1035;
 
 /* perlu diganti warna sesuai brand guidelines */
 .btn-primary{
-    background:#fbee47 !important;
+    background:#58595b !important;
     font-weight: 100 !important;
     color:#000 !important;
 }
 .card-header.bg-primary{
-    background:#fbee47 !important;
+    background:#58595b !important;
     font-weight: 100 !important;
     color:#000 !important;
 }
@@ -610,7 +610,7 @@ z-index: 1035;
     color:#111;
 }
 .badge.bg-primary{
-    background:#dccba8 !important;
+    background:#58595b !important;
     color:#111;
 }
 .badge.bg-success{

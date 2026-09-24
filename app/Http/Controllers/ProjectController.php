@@ -9,8 +9,8 @@ use App\Models\Affiliator;
 use App\Models\Invoice;
 use App\Models\Project;
 use App\Models\ProjectType;
-use App\Models\RabProcess;     // header "Penawaran Harga" (1 per project)
-use App\Models\RabProcessItem; // item penawaran per kategori/pekerjaan
+use App\Models\RabProcess;
+use App\Models\OfferProcessItem; 
 use App\Models\User;
 use App\Models\Province;
 use App\Services\ProjectNotifier;
@@ -22,9 +22,6 @@ use DB;
 
 class ProjectController extends Controller
 {
-    /**
-     * ================== LIST PROJECT ==================
-     */
     public function index(Request $request)
     {
         $auth = auth()->user();
@@ -33,6 +30,7 @@ class ProjectController extends Controller
             'customer.user:id,fullname',
             'employee.user:id,fullname',
             'affiliator.user:id,fullname',
+            'projectType:id,name',
             'levels:id,project_id,level_order,level_name,is_completed',
         ]);
 
@@ -48,12 +46,6 @@ class ProjectController extends Controller
         }
 
         if ($request->ajax()) {
-            $statusLabel = [
-                1 => 'Proses',
-                2 => 'Revisi',
-                3 => 'Butuh Persetujuan',
-                4 => 'Selesai',
-            ];
 
             return DataTables::of($query)
                 ->addIndexColumn()
@@ -63,13 +55,13 @@ class ProjectController extends Controller
                 ->addColumn('start_date', fn ($row) => $row->start_date
                     ? Carbon::parse($row->start_date)->format('d/m/Y')
                     : '-')
-                ->addColumn('project_status', function ($row) use ($statusLabel) {
-                    $label = $statusLabel[$row->project_status] ?? 'Tidak Diketahui';
-                    $color = match ($row->project_status) {
-                        1 => 'info', 2 => 'danger', 3 => 'warning', 4 => 'success',
-                        default => 'secondary',
-                    };
-                    return '<span class="badge bg-' . $color . '">' . $label . '</span>';
+                ->addColumn('project_type', function ($row) {
+
+                    $name = $row->projectType?->name ?? '-';
+
+                    return '<span class="badge bg-info">'
+                        . e($name) .
+                        '</span>';
                 })
                 ->addColumn('current_level', function ($row) {
                     $current = $row->levels->where('is_completed', false)->sortBy('level_order')->first();
@@ -96,7 +88,7 @@ class ProjectController extends Controller
                     }
                     return $buttons;
                 })
-                ->rawColumns(['current_level', 'action', 'project_status', 'project_name'])
+                ->rawColumns(['current_level', 'action', 'project_type', 'project_name'])
                 ->make(true);
         }
 
@@ -158,9 +150,6 @@ class ProjectController extends Controller
             ->values();
     }
 
-    /**
-     * ================== CREATE / SHOW WIZARD ==================
-     */
     public function create(Request $request)
     {
         $project = null;
@@ -206,7 +195,7 @@ class ProjectController extends Controller
             'projectType',
             'levels',
             'rab.items', // header penawaran + itemnya
-            // 'invoices',
+            'invoices',
         ])->findOrFail($projectId);
     }
 
@@ -235,89 +224,13 @@ class ProjectController extends Controller
         return compact('rab', 'offerItems', 'groupedItems', 'totalPenawaran');
     }
 
-    /**
-     * Data untuk step "Invoice" — cukup satu invoice per project.
-     * TODO: kalau invoice_type wajib diisi, ganti null di bawah dgn constant yg sesuai (mis. Invoice::TYPE_WEDDING).
-     */
     private function resolveInvoiceData($project): array
     {
-        $invoice = Invoice::where('project_id', $project->id)
-            ->latest()
-            ->first();
+        $invoiceTermins = Invoice::where('project_id', $project->id)
+            ->orderByTermin()
+            ->get();
 
-        return compact('invoice');
-    }
-
-    /**
-     * ================== ITEM PENAWARAN (modal tambah item) ==================
-     */
-    public function storeOfferItem(Request $request, Project $project)
-    {
-        $validated = $request->validate([
-            'category_name' => 'nullable|string|max:255',
-            'job_name'      => 'required|string|max:255', // nama item/jasa wedding
-            'satuan'        => 'nullable|string|max:50',
-            'volume'        => 'required|numeric|min:0',
-            'price'         => 'required|numeric|min:0',
-            'description'   => 'nullable|string',
-        ]);
-
-        // Header RAB dibuat otomatis kalau project ini belum punya
-        $rab = $project->rab()->firstOrCreate([]);
-
-        $validated['total']          = $validated['volume'] * $validated['price'];
-        $validated['rab_process_id'] = $rab->id;
-        $validated['order_no']       = ($rab->items()->max('order_no') ?? 0) + 1;
-
-        RabProcessItem::create($validated);
-
-        $this->recalculateRabTotals($rab);
-
-        return back()->with('success', 'Item penawaran berhasil ditambahkan.');
-    }
-
-    public function updateOfferItem(Request $request, RabProcessItem $item)
-    {
-        $validated = $request->validate([
-            'category_name' => 'nullable|string|max:255',
-            'job_name'      => 'required|string|max:255',
-            'satuan'        => 'nullable|string|max:50',
-            'volume'        => 'required|numeric|min:0',
-            'price'         => 'required|numeric|min:0',
-            'description'   => 'nullable|string',
-        ]);
-
-        $validated['total'] = $validated['volume'] * $validated['price'];
-
-        $item->update($validated);
-
-        $this->recalculateRabTotals($item->rab);
-
-        return back()->with('success', 'Item penawaran berhasil diperbarui.');
-    }
-
-    public function destroyOfferItem(RabProcessItem $item)
-    {
-        $rab = $item->rab;
-        $item->delete();
-
-        $this->recalculateRabTotals($rab);
-
-        return back()->with('success', 'Item penawaran dihapus.');
-    }
-
-    /**
-     * Hitung ulang subtotal/grand_total header RabProcess setelah item berubah.
-     * Sederhana dulu (tanpa diskon/pajak) — tambahkan logic discount/tax_rate di sini kalau dipakai.
-     */
-    private function recalculateRabTotals(RabProcess $rab): void
-    {
-        $subtotal = $rab->items()->sum('total');
-
-        $rab->update([
-            'subtotal'    => $subtotal,
-            'grand_total' => $subtotal, // TODO: kurangi discount / tambah tax & shipping kalau relevan
-        ]);
+        return compact('invoiceTermins');
     }
 
     private function formData($project = null, int $activeStep = 1, array $merge = []): array
@@ -345,7 +258,7 @@ class ProjectController extends Controller
 
         //     // Auto-suggest item dari project lain milik customer yang sama (mirip pola RAB lama)
         //     if ($project?->customer_id) {
-        //         $data['pastOfferItems'] = RabProcessItem::whereHas('rab.project', function ($q) use ($project) {
+        //         $data['pastOfferItems'] = OfferProcessItem::whereHas('rab.project', function ($q) use ($project) {
         //             $q->where('customer_id', $project->customer_id);
         //         })
         //         ->get()

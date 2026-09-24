@@ -7,19 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 
 class Invoice extends Model
 {
+    protected $table = 'zhpicture.invoices';
     use HasUuid;
 
-    const TYPE_SURVEY = 'survey';
-    const TYPE_DP = 'dp';
-    const TYPE_FINAL = 'final';
-    const TYPE_RAB = 'rab';
-    const TYPE_BUILD = 'build';
+    const TYPE_SURVEY  = 'survey';
+    const TYPE_DP      = 'dp';
+    const TYPE_FINAL   = 'final';
+    const TYPE_RAB     = 'rab';
+    const TYPE_BUILD   = 'build';
+    const TYPE_WEDDING = 'wedding'; // baru — dipakai buat flow wedding syariah (1 invoice per project)
 
-    const STATUS_DRAFT = 'draft';
-    const STATUS_WAITING = 'waiting_approval';
+    const STATUS_DRAFT    = 'draft';
+    const STATUS_WAITING  = 'waiting_approval';
     const STATUS_APPROVED = 'approved';
     const STATUS_REJECTED = 'rejected';
-    const STATUS_PAID = 'paid';
+    const STATUS_PAID     = 'paid';
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -35,6 +37,8 @@ class Invoice extends Model
         'invoice_number',
         'invoice_date',
         'invoice_type',
+        'termin_no',
+        'termin_label',
         'amount',
         'status',
         'approved_at',
@@ -47,7 +51,7 @@ class Invoice extends Model
         'invoice_dp_approved_at',
         'downloaded_at',
         'approve_by_name',
-        'approved_ip'
+        'approved_ip',
     ];
 
     public function project()
@@ -55,8 +59,10 @@ class Invoice extends Model
         return $this->belongsTo(Project::class);
     }
 
-        public function planning()
+    public function scopeOrderByTermin($query)
     {
-        return $this->hasOne(Planning::class);
+        return $query->orderBy('termin_no');
     }
+
+    // planning() dihapus — itu peninggalan copy-paste dari model lain, Invoice tidak ada hubungan ke Planning.
 }

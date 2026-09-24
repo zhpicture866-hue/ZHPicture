@@ -11,8 +11,8 @@ class OfferProcess extends Model
     protected $fillable = [
         'project_id',
         'contact_name',
-        'job_location',
-        'job_duration',
+        'offer_date',
+        'offer_number',
         'base_subtotal',
         'subtotal',
         'discount',
@@ -36,7 +36,7 @@ class OfferProcess extends Model
     
     public function items()
     {
-        return $this->hasMany(RabProcessItem::class, 'rab_process_id');
+        return $this->hasMany(OfferProcessItem::class, 'offer_process_id');
     }
 
     // public function categories()

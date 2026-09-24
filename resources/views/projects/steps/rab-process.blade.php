@@ -21,32 +21,31 @@
 
         </div>
         <div class="col-md-4">
-            <label>Tanggal Penawaran</label>
-            <input type="date" name="offer_date" class="form-control" required>
+
+            <label class="form-label fw-semibold">
+                Tanggal Penawaran
+            </label>
+
+            <div class="input-icon">
+                <span class="input-icon-addon">
+                    <i class="ti ti-calendar"></i>
+                </span>
+
+                <input type="text"
+                    name="offer_date"
+                    id="offer_date"
+                    class="form-control"
+                    placeholder="dd/mm/yyyy"
+                    value="{{ old('offer_date', now()->format('Y-m-d')) }}">
+
+            </div>
+
         </div>
         <div class="col-md-4">
             <label>Nama Customer</label>
-            <input type="text" name="contact_name" value="{{ $project->customer->user->fullname }}" class="form-control">
+            <input type="text" value="{{ $project->customer->user->fullname }}" class="form-control" readonly>
         </div>
     </div>
-    {{-- <div class="row g-3">
-        <div class="col-md-3">
-            <label class="form-label">Project</label>
-            <input type="text" name="project_name" value="{{ old('project_name', $project->project_name ?? '') }}" class="form-control">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Nama Customer</label>
-            <input type="text" name="contact_name" value="{{ old('contact_name', $project->customer->user->fullname ?? '') }}" class="form-control">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Address</label>
-            <input type="text" name="job_location" value="{{ old('job_location', $project->city->name ?? '-') }}" class="form-control">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Phone</label>
-            <input type="text" name="contact_phone" value="{{ old('contact_phone', $project->customer->user->phone ?? '') }}" class="form-control">
-        </div>
-    </div> --}}
   
     <div class="row mb-4 mt-3">
 
@@ -58,7 +57,7 @@
 
             <div class="rab-action-buttons">
 
-                <button type="button"
+                {{-- <button type="button"
                         id="tombolUbah"
                         class="btn btn-dark btn-sm">
                     ✏️ Mode Edit
@@ -68,7 +67,7 @@
                         id="tombolGeser"
                         class="btn btn-outline-secondary btn-sm">
                     🔀 Urutkan Daftar Pekerjaan
-                </button>
+                </button> --}}
 
                 <button type="button"
                         class="btn btn-dark btn-sm"
@@ -85,20 +84,20 @@
 
                 <colgroup>
                     <col style="width: 60px">
-                    <col>
+                    <col style="width: 180px">
                     <col style="width: 60px">
                     <col style="width: 130px">
                     <col style="width: 180px">
-                    <col style="width: 60px">
+                    <col style="width: 40px">
                 </colgroup>
 
                 <thead>
                     <tr>
-                        <th>NO</th>
-                        <th>Nama Produk</th>
-                        <th>Qty</th>
-                        <th>Harga</th>
-                        <th>JUMLAH</th>
+                        <th class="text-center">NO</th>
+                        <th class="text-center">Nama Produk</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-center">Harga</th>
+                        <th class="text-center">JUMLAH</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -304,162 +303,6 @@
         </div>
 
     </div>
-        {{-- <div class="modal fade" id="addRabItemModal" tabindex="-1" aria-hidden="true">
-
-            <div class="modal-dialog modal-dialog-centered">
-
-                <div class="modal-content">
-
-                    <div class="modal-header border-0">
-
-                        <div>
-                            <h5 class="modal-title fw-bold">
-                                Tambah Item RAB
-                            </h5>
-
-                            <small class="text-muted">
-                                Masukkan pekerjaan yang akan ditambahkan ke RAB
-                            </small>
-                        </div>
-
-                        <button type="button"
-                                class="btn-close"
-                                data-bs-dismiss="modal">
-                        </button>
-
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="rab_item_floor" value="Umum">
-
-                        <div class="mb-3">
-
-                            <label class="form-label fw-semibold">
-                                Kategori / Paket <span class="text-muted fw-normal">(opsional)</span>
-                            </label>
-
-                            <div id="categorySelectWrapper">
-                                <select id="rab_item_category" class="form-select">
-                                    <option value="">
-                                        -- Pilih Kategori --
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div id="categoryInputWrapper" class="d-none">
-                                <div class="input-group">
-                                    <input type="text"
-                                        id="rab_item_category_new"
-                                        class="form-control"
-                                        placeholder="Contoh: Silver, Gold, Platinum">
-
-                                    <button type="button"
-                                            class="btn btn-outline-secondary"
-                                            onclick="cancelNewCategory()">
-                                        Batal
-                                    </button>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label required fw-semibold">
-                                Nama Produk
-                            </label>
-                            <input type="text"
-                                id="rab_item_job_name"
-                                class="form-control"
-                                placeholder="Contoh: Foto Wedding Syar'i (Silver)">
-
-                        </div>
-
-                        <div class="mb-3">
-
-                            <label class="form-label fw-semibold">
-                                Deskripsi
-                            </label>
-                                <div id="description-editor"></div>
-                            <textarea id="rab_item_description"
-                                    class="d-none">{{ old('rab_item_description') }}</textarea>
-
-                        </div>
-
-                        <div class="row g-3 mb-3">
-
-                            <div class="col-md-6">
-
-                                <label class="form-label required fw-semibold">
-                                    Qty
-                                </label>
-
-                                <input type="text"
-                                    id="rab_item_volume"
-                                    class="form-control"
-                                    inputmode="decimal"
-                                    placeholder="1">
-
-                                <input type="hidden" id="rab_item_satuan" value="paket">
-
-                            </div>
-
-                            <div class="col-md-6">
-
-                                <label class="form-label required fw-semibold">
-                                    Day
-                                </label>
-
-                                <input type="number"
-                                    id="rab_item_day"
-                                    class="form-control"
-                                    min="1"
-                                    step="1"
-                                    placeholder="1">
-
-                            </div>
-
-                        </div>
-
-                        <div class="mb-3">
-
-                            <label class="form-label fw-semibold">
-                                Harga
-                                <span class="text-danger">*</span>
-                            </label>
-
-                            <input type="text"
-                                id="rab_item_price_display"
-                                class="form-control"
-                                inputmode="decimal"
-                                placeholder="Rp 0,00">
-
-                            <input type="hidden"
-                                id="rab_item_price">
-
-                        </div>
-
-                    </div>
-                    <div class="modal-footer border-0">
-
-                        <button type="button"
-                                class="btn btn-light"
-                                data-bs-dismiss="modal">
-                            Batal
-                        </button>
-
-                        <button type="button"
-                                class="btn btn-dark"
-                                onclick="saveRabItem()">
-                            Simpan Item
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div> --}}
         <input type="hidden" name="profit" id="rab_profit">
         <input type="hidden" name="overhead" id="rab_overhead">
         <input type="hidden" name="subtotal" id="rab_subtotal">
@@ -503,7 +346,27 @@
                 ]
             }
         });
+    const offerDate =
+        document.getElementById('offer_date');
 
+    if (offerDate) {
+
+        flatpickr(offerDate, {
+
+            dateFormat: 'Y-m-d',
+
+            altInput: true,
+
+            altFormat: 'd/m/Y',
+
+            allowInput: true,
+
+            defaultDate:
+                offerDate.value || new Date(),
+
+        });
+
+    }
     });
 
     async function handleRabExcelFile(event) {
@@ -1663,68 +1526,68 @@
         modal.show();
     }
 
-function saveRabItem() {
+    function saveRabItem() {
 
-    const description = rabDescriptionEditor
-        ? rabDescriptionEditor.root.innerHTML.trim()
-        : '';
+        const description = rabDescriptionEditor
+            ? rabDescriptionEditor.root.innerHTML.trim()
+            : '';
 
-    const volumeInput =
-        document.getElementById('rab_item_volume').value;
+        const volumeInput =
+            document.getElementById('rab_item_volume').value;
 
-    const volume =
-        parseDecimal(volumeInput);
+        const volume =
+            parseDecimal(volumeInput);
 
-    const basePrice =
-        parseRupiah(
-            document.getElementById('rab_item_price_display').value
-        );
+        const basePrice =
+            parseRupiah(
+                document.getElementById('rab_item_price_display').value
+            );
 
 
-    if (volume <= 0) {
-        alert('Qty harus lebih besar dari 0.');
-        document.getElementById('rab_item_volume').focus();
-        return;
+        if (volume <= 0) {
+            alert('Qty harus lebih besar dari 0.');
+            document.getElementById('rab_item_volume').focus();
+            return;
+        }
+
+        if (basePrice < 0) {
+            alert('Harga tidak valid.');
+            document.getElementById('rab_item_price_display').focus();
+            return;
+        }
+
+
+        const price = calculateItemPrice(basePrice);
+
+        const total = volume * price;
+
+
+        rabItems.push({
+            temp_id: 'item_' + (++itemCounter),
+            description: description,
+            volume: volume,
+            base_price: basePrice,
+            price: price,
+            total: total,
+            order_no: rabItems.length + 1
+        });
+
+
+        renderRabItems();
+
+        calculateSummary();
+
+
+        const modalElement =
+            document.getElementById('addRabItemModal');
+
+        const modal =
+            bootstrap.Modal.getInstance(modalElement);
+
+        if (modal) {
+            modal.hide();
+        }
     }
-
-    if (basePrice < 0) {
-        alert('Harga tidak valid.');
-        document.getElementById('rab_item_price_display').focus();
-        return;
-    }
-
-
-    const price = calculateItemPrice(basePrice);
-
-    const total = volume * price;
-
-
-    rabItems.push({
-        temp_id: 'item_' + (++itemCounter),
-        description: description,
-        volume: volume,
-        base_price: basePrice,
-        price: price,
-        total: total,
-        order_no: rabItems.length + 1
-    });
-
-
-    renderRabItems();
-
-    calculateSummary();
-
-
-    const modalElement =
-        document.getElementById('addRabItemModal');
-
-    const modal =
-        bootstrap.Modal.getInstance(modalElement);
-
-    if (modal) {
-        modal.hide();
-    }
-}
     function calculateItemPrice(basePrice) {
 
         basePrice = Number(basePrice) || 0;
@@ -2444,20 +2307,21 @@ function updateItemVolume(id, value) {
 
         }
 
-        const form = document.getElementById('rabForm');
+const form = document.getElementById('rabForm');
 
-        if (form) {
+if (form) {
+    form.addEventListener('submit', function () {
 
-            form.addEventListener(
-                'submit',
-                function () {
+        calculateSummary();
+        prepareRabItemsForSubmit();
 
-                    prepareRabItemsForSubmit();
-
-                }
-            );
-
-        }
+        console.log(
+            Object.fromEntries(
+                new FormData(form)
+            )
+        );
+    });
+}
         const floorSelect = document.getElementById('rab_item_floor');
 
         if (floorSelect) {

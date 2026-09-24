@@ -25,7 +25,7 @@ class ProjectTypeController extends Controller
                 ->addColumn('action', function ($row) {
                     $editUrl = route('project_types.edit', $row->id);
 
-                    $buttons = '<a href="' . $editUrl . '" class="btn btn-icon btn-sm btn-primary">
+                    $buttons = '<a href="' . $editUrl . '" class="btn btn-icon btn-sm btn-primary text-white">
                                     <i class="ti ti-edit"></i></a>';
 
                     // Jangan izinkan hapus kalau masih ada project yang pakai tipe ini
@@ -110,9 +110,6 @@ class ProjectTypeController extends Controller
             ->with('success', 'Jenis proyek berhasil diperbarui.');
     }
 
-    /**
-     * ================== DELETE ==================
-     */
     public function destroy(ProjectType $projectType)
     {
         if ($projectType->projects()->exists()) {

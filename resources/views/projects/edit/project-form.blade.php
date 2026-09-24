@@ -44,19 +44,6 @@
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label required">Tanggal Mulai Proyek</label>
-                                <input type="date" name="start_date" class="form-control" required
-                                    value="{{ old('start_date', $project->start_date) }}"
-                                    pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Tanggal Akhir Proyek (Estimasi)</label>
-                                <input type="date" name="end_date" class="form-control"
-                                    value="{{ old('end_date', $project->end_date) }}"
-                                    pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD">
-                </div>
-
-                <div class="col-md-3">
                     <label class="form-label required">Tanggal & Waktu Mulai Event</label>
 
                     <input

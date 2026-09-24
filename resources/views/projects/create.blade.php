@@ -29,12 +29,14 @@
             </div>
             @endif
             @if($activeStep >= 2)
-                    <x-collapse-card title="Proyek" target="project-body">
+                    <x-collapse-card title="1. Proyek" target="project-body">
                         <x-slot:actions>
                             @can('ubah data proyek')
                             <div class="btn-group">
-                                <button type="button" id="btn-edit-project"
-                                    class="btn btn-sm btn-dark me-2"
+                                <button type="button"
+                                    class="btn btn-sm btn-dark me-2 btn-toggle-view-edit"
+                                    data-view="project-view"
+                                    data-edit="project-edit"
                                     title="Edit Data">
                                     <i class="ti ti-edit"></i>
                                 </button>
@@ -45,56 +47,99 @@
                             @include('projects.details.project')
                         </div>
                         <div id="project-edit" style="display:none;">
-                            @include('projects.edit.project-form')    
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary btn-cancel-view-edit mb-3"
+                                    data-view="project-view"
+                                    data-edit="project-edit">
+                                <i class="ti ti-x"></i> Batal
+                            </button>
+                            @include('projects.edit.project-form')
                         </div>
                     </x-collapse-card>
 
                 @php
-                    // Peta nama level -> partial view yang menampilkannya.
-                    // Nambah project_type baru dengan step yang SAMA (Penawaran Harga, Invoice)
-                    // otomatis kepakai tanpa perlu ubah apapun di sini.
-                    // Baru perlu nambah baris kalau ada level_name BARU yang belum pernah ada.
+                    // Peta nama level -> partial. 'form' = tampilan interaktif/edit,
+                    // 'detail' = ringkasan (kalau null, berarti step ini gak butuh mode
+                    // ringkasan terpisah — partial 'form'-nya sendiri sudah pintar
+                    // menampilkan status akhir, misal step Invoice).
+                    // Nambah project_type baru dengan step yang SAMA otomatis kepakai.
                     $stepViews = [
                         'Penawaran Harga' => [
-                            'partial' => 'projects.steps.rab-process',
+                            'form'    => 'projects.steps.rab-process',
+                            'detail'  => 'projects.details.rab-process',
+                            'hasData' => (bool) ($project->rab && $project->rab->items()->exists()),
                             'action'  => '<button type="submit" form="rabForm" class="btn btn-dark" title="Simpan RAB"><i class="ti ti-device-floppy me-1"></i></button>',
                         ],
                         'Invoice' => [
-                            'partial' => 'projects.steps.invoice',
+                            'form'    => 'projects.steps.invoice',
+                            'detail'  => null, // partial-nya sendiri sudah handle tampilan "sudah ada termin" vs "belum"
+                            'hasData' => false,
                             'action'  => null,
                         ],
                     ];
-
-                    $currentLevel = $project->levels->sortBy('level_order')
-                        ->first(fn ($lvl) => $activeStep === $lvl->level_order + 1);
                 @endphp
 
-                @if($currentLevel)
-                    <div id="step-{{ \Illuminate\Support\Str::slug($currentLevel->level_name) }}" class="step-section">
-                        <x-collapse-card
-                            title="{{ ($currentLevel->level_order + 1) . '. ' . $currentLevel->level_name }}"
-                            target="step-body"
-                            :sticky="false">
+                @foreach($project->levels->sortBy('level_order') as $level)
+                    @continue($activeStep < $level->level_order + 1) {{-- step ini belum sampai giliran, jangan tampilkan dulu --}}
 
-                            @if(isset($stepViews[$currentLevel->level_name]['action']) && $stepViews[$currentLevel->level_name]['action'])
-                                <x-slot:actions>
-                                    {!! $stepViews[$currentLevel->level_name]['action'] !!}
-                                </x-slot:actions>
-                            @endif
+                    @php
+                        $config = $stepViews[$level->level_name] ?? null;
+                        $stepTitle = ($level->level_order + 1) . '. ' . $level->level_name;
+                        $slug = \Illuminate\Support\Str::slug($level->level_name);
+                    @endphp
 
-                            @if(isset($stepViews[$currentLevel->level_name]))
-                                @include($stepViews[$currentLevel->level_name]['partial'])
-                            @else
-                                {{-- Jenis proyek ini punya step baru yang belum ada tampilannya.
-                                     Tambahkan entry-nya di $stepViews di atas. --}}
+                    <div id="step-{{ $slug }}" class="step-section">
+                        @if(! $config)
+                            {{-- Jenis proyek ini punya step baru yang belum ada tampilannya.
+                                 Tambahkan entry-nya di $stepViews di atas. --}}
+                            <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body">
                                 <div class="alert alert-warning mb-0">
-                                    Belum ada tampilan untuk step "<strong>{{ $currentLevel->level_name }}</strong>".
+                                    Belum ada tampilan untuk step "<strong>{{ $level->level_name }}</strong>".
                                     Hubungi developer untuk menambahkan partial view-nya.
                                 </div>
-                            @endif
-                        </x-collapse-card>
+                            </x-collapse-card>
+
+                        @elseif($config['detail'] && $config['hasData'])
+                            {{-- Sudah ada datanya -> tampil ringkas, bisa dibuka buat edit --}}
+                            <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body">
+                                <x-slot:actions>
+                                    @can('ubah data proyek')
+                                    <button type="button"
+                                            class="btn btn-sm btn-dark btn-toggle-view-edit"
+                                            data-view="{{ $slug }}-view"
+                                            data-edit="{{ $slug }}-edit"
+                                            title="Edit Data">
+                                        <i class="ti ti-edit"></i>
+                                    </button>
+                                    @endcan
+                                </x-slot:actions>
+                                <div id="{{ $slug }}-view">
+                                    @include($config['detail'])
+                                </div>
+                                <div id="{{ $slug }}-edit" style="display:none;">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary btn-cancel-view-edit mb-3"
+                                            data-view="{{ $slug }}-view"
+                                            data-edit="{{ $slug }}-edit">
+                                        <i class="ti ti-x"></i> Batal
+                                    </button>
+                                    @include($config['form'])
+                                </div>
+                            </x-collapse-card>
+
+                        @else
+                            {{-- Step ini yang sedang dikerjakan / belum ada data -> langsung tampilkan form-nya --}}
+                            <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body" :sticky="false">
+                                @if($config['action'])
+                                    <x-slot:actions>
+                                        {!! $config['action'] !!}
+                                    </x-slot:actions>
+                                @endif
+                                @include($config['form'])
+                            </x-collapse-card>
+                        @endif
                     </div>
-                @endif
+                @endforeach
             @endif
         </div>
     </div>
@@ -362,21 +407,27 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-    const view = document.getElementById("project-view");
-    const edit = document.getElementById("project-edit");
-    const editBtn = document.getElementById("btn-edit-project");
-    const cancelBtn = document.getElementById("btn-cancel-project");
-
-    if (!view || !edit || !editBtn || !cancelBtn) return; // belum ke-render (mis. masih step 1)
-
-    editBtn.addEventListener("click", () => {
-        view.style.display = "none";
-        edit.style.display = "block";
+    // Generic: buka mode edit. Pasang di tombol manapun dgn data-view & data-edit
+    // (dipakai bareng oleh section "Proyek" dan tiap step yang punya mode ringkas/edit).
+    document.querySelectorAll(".btn-toggle-view-edit").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const view = document.getElementById(btn.dataset.view);
+            const edit = document.getElementById(btn.dataset.edit);
+            if (!view || !edit) return;
+            view.style.display = "none";
+            edit.style.display = "block";
+        });
     });
 
-    cancelBtn.addEventListener("click", () => {
-        edit.style.display = "none";
-        view.style.display = "block";
+    // Generic: batal, balik ke mode ringkas
+    document.querySelectorAll(".btn-cancel-view-edit").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const view = document.getElementById(btn.dataset.view);
+            const edit = document.getElementById(btn.dataset.edit);
+            if (!view || !edit) return;
+            edit.style.display = "none";
+            view.style.display = "block";
+        });
     });
 
 });
