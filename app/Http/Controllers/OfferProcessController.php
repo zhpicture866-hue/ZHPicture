@@ -365,4 +365,17 @@ private function generateOfferNumber(): string
         $number
     );
 }
+public function exportPdf(Project $project)
+{
+    $rab = $project->rab()->with([
+        'items'
+    ])->first();
+
+    if (!$rab) abort(404);
+
+    $pdf = Pdf::loadView('rab.pdf', compact('rab', 'project'))
+        ->setPaper('A4', 'portrait');
+
+    return $pdf->stream('RENCANA ANGGARAN BIAYA-'.$project->project_name.'.pdf');
+}
 }

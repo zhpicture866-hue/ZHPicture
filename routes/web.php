@@ -445,11 +445,6 @@ Route::get(
     'projects/{project}/contract/buildpdf',
     [\App\Http\Controllers\ContractBuildController::class, 'buildpdf']
 )->name('projects.contract.buildpdf');
-Route::post('projects/{project}/invoice/termins', [ProjectController::class, 'storeInvoiceTermins'])
-    ->name('projects.invoice.store');
- 
-Route::get('projects/{project}/invoice/{invoice}/pdf', [ProjectController::class, 'printInvoice'])
-    ->name('projects.invoice.pdf');
  
 Route::post('projects/{project}/invoice/{invoice}/approve', [ProjectController::class, 'approveInvoiceTermin'])
     ->name('projects.invoice.approve');
