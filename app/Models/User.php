@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Traits\HasUuid;
+use App\Models\DatabaseNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Model;
@@ -66,7 +67,13 @@ public function activeRole()
 {
     return $this->belongsTo(Role::class, 'active_role');
 }
-
+public function notifications()
+{
+    return $this->morphMany(
+        DatabaseNotification::class,
+        'notifiable'
+    )->latest();
+}
     
     protected $fillable = [
         'fullname',
