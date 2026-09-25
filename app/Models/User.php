@@ -91,7 +91,8 @@ public function activeRole()
         'account_number',
         'account_holder',
         'active_role',
-        'identity_photo'
+        'identity_photo',
+        'email_verified_at'
     ];
 
     /**
