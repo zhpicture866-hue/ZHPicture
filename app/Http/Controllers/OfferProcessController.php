@@ -291,16 +291,16 @@ public function store(Request $request)
             );
 
 
-} catch (\Throwable $e) {
+    } catch (\Throwable $e) {
 
-    DB::rollBack();
+        DB::rollBack();
 
-    dd([
-        'message' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine(),
-    ]);
-}
+        dd([
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+    }
 }
 
     protected function notifyProjectEvent(Project $project, string $event)
@@ -410,17 +410,19 @@ public function update(Request $request, Project $project, OfferProcess $rab) {
 
     $validator = Validator::make($request->all(), [
 
-        'project_id' =>
-            'required|exists:projects,id',
+        'project_id' => [
+            'required',
+            'uuid',
+            Rule::exists(Project::class, 'id'),
+        ],
 
         'contact_name' =>
             'required|string|max:255',
 
-        'job_location' =>
-            'required|string|max:255',
-
-        'job_duration' =>
-            'nullable|string',
+        'offer_date' => [
+            'required',
+            'date',
+        ],
 
         'profit' =>
             'nullable|numeric|min:0|max:100',
@@ -438,57 +440,29 @@ public function update(Request $request, Project $project, OfferProcess $rab) {
             'nullable|numeric|min:0',
         'notes' => 'nullable|string',
 
-        /*
-        |--------------------------------------------------------------------------
-        | ITEMS
-        |--------------------------------------------------------------------------
-        */
+        'items' => 'required|array|min:1',
 
-        'items' =>
-            'required|array|min:1',
+        'items.*.id' => 'nullable',
 
-        'items.*.id' =>
-            'nullable',
+        'items.*.description' => 'required|string',
 
-        'items.*.floor_name' =>
-            'required|string|max:255',
+        'items.*.volume' => 'required|numeric|gt:0',
 
-        'items.*.category_name' =>
-            'required|string|max:255',
+        'items.*.base_price' => 'required|numeric|min:0',
 
-        'items.*.job_name' =>
-            'required|string|max:255',
+        'items.*.price' => 'nullable|numeric|min:0',
 
-        'items.*.description' =>
-            'nullable|string',
+        'items.*.total' => 'nullable|numeric|min:0',
 
-        'items.*.satuan' =>
-            'required|string|max:100',
-
-        'items.*.volume' =>
-            'required|numeric|gt:0',
-
-        'items.*.base_price' =>
-            'required|numeric|min:0',
-
-        'items.*.price' =>
-            'nullable|numeric|min:0',
-
-        'items.*.total' =>
-            'nullable|numeric|min:0',
-
-        'items.*.order_no' =>
-            'required|integer|min:1',
+        'items.*.order_no' => 'required|integer|min:1',
     ]);
 
 
     if ($validator->fails()) {
-
-        return redirect()
-            ->back()
-            ->withErrors($validator)
-            ->withInput();
-
+        dd([
+            'errors' => $validator->errors()->toArray(),
+            'request' => $request->all(),
+        ]);
     }
 
 
@@ -565,10 +539,7 @@ public function update(Request $request, Project $project, OfferProcess $rab) {
 
             'contact_name' =>
                 $request->contact_name,
-
-            'job_location' => $request->job_location,
-
-            'job_duration' => $request->job_duration,
+            'offer_date' => $request->offer_date,
             'notes' => $request->notes,
             'base_subtotal' => $baseSubtotal,
 
@@ -629,7 +600,7 @@ public function update(Request $request, Project $project, OfferProcess $rab) {
                     $item['id']
                 )
                     ->where(
-                        'rab_process_id',
+                        'offer_process_id',
                         $rab->id
                     )
                     ->first();
@@ -644,20 +615,8 @@ public function update(Request $request, Project $project, OfferProcess $rab) {
 
                 $rabItem->update([
 
-                    'floor_name' =>
-                        $item['floor_name'],
-
-                    'category_name' =>
-                        $item['category_name'],
-
-                    'job_name' =>
-                        $item['job_name'],
-
                     'description' =>
                         $item['description'] ?? null,
-
-                    'satuan' =>
-                        $item['satuan'],
 
                     'volume' =>
                         $volume,
@@ -686,23 +645,11 @@ public function update(Request $request, Project $project, OfferProcess $rab) {
                 $rabItem =
                     OfferProcessItem::create([
 
-                        'rab_process_id' =>
+                        'offer_process_id' =>
                             $rab->id,
-
-                        'floor_name' =>
-                            $item['floor_name'],
-
-                        'category_name' =>
-                            $item['category_name'],
-
-                        'job_name' =>
-                            $item['job_name'],
 
                         'description' =>
                             $item['description'] ?? null,
-
-                        'satuan' =>
-                            $item['satuan'],
 
                         'volume' =>
                             $volume,
@@ -727,7 +674,7 @@ public function update(Request $request, Project $project, OfferProcess $rab) {
         }
 
         OfferProcessItem::where(
-            'rab_process_id',
+            'offer_process_id',
             $rab->id
         )
             ->whereNotIn(
@@ -746,22 +693,15 @@ public function update(Request $request, Project $project, OfferProcess $rab) {
                 'RAB berhasil diperbarui.'
             );
 
-
     } catch (\Throwable $e) {
 
         DB::rollBack();
 
-        report($e);
-
-
-        return redirect()
-            ->back()
-            ->withInput()
-            ->with(
-                'error',
-                'RAB gagal diperbarui: '
-                . $e->getMessage()
-            );
+        dd([
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
     }
 }
 }

@@ -2,15 +2,15 @@
     @csrf
     @method('PUT')
 
-                        @if ($errors->any())
-                                        <div class="alert alert-danger">
-                                            <ul class="mb-0">
-                                                @foreach ($errors->all() as $error)
-                                                    <li>{{ $error }}</li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
-                                    @endif
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <input type="hidden" name="project_id" value="{{ $project->id }}">
 
@@ -18,7 +18,7 @@
 
     <div class="row g-3">
         <div class="col-md-4">
-            <label>Nomor Penawaran</label>
+            <label class="form-label fw-semibold">Nomor Penawaran</label>
             <input type="text" name="offer_number" class="form-control" value="{{ old('offer_number', $rab->offer_number) ?? '' }}" placeholder="Auto Generate" readonly>
 
         </div>
@@ -44,8 +44,8 @@
 
         </div>
         <div class="col-md-4">
-            <label>Nama Customer</label>
-            <input type="text" value="{{ $rab->contact_name }}" class="form-control" readonly>
+            <label class="form-label fw-semibold">Nama Customer</label>
+            <input type="text" name="contact_name" value="{{ $rab->contact_name }}" class="form-control" readonly>
         </div>
     </div>
   
@@ -315,6 +315,8 @@
         <input type="hidden" name="subtotal_after_discount" id="rab_subAfterDiscount" value="{{ $rab->subtotal_after_discount }}">
         <input type="hidden" name="tax_total" id="rab_tax_total" value="{{ $rab->tax_total }}">
         <input type="hidden" name="grand_total" id="rab_grand_total" value="{{ $rab->grand_total }}">
+        <input type="hidden" name="profit"   id="rab_profit_edit"   value="{{ old('profit', $rab->profit) }}">
+        <input type="hidden" name="overhead" id="rab_overhead_edit" value="{{ old('overhead', $rab->overhead) }}">
             <div id="rabEditItemsContainer"></div>
     <h4 class="fw-bold mb-3">Keterangan</h4>
 
@@ -458,6 +460,11 @@
                     ['clean']
                 ]
             }
+        });
+        editrabDescriptionEditor.on('text-change', function () {
+            const empty = editrabDescriptionEditor.getText().trim().length === 0;
+            document.getElementById('rab_item_description_edit').value =
+                empty ? '' : editrabDescriptionEditor.root.innerHTML;
         });
     const offerDate =
         document.getElementById('offer_date');
@@ -1277,7 +1284,8 @@
                                     </td>
 
                                     <td>
-                                        <div class="rab-description-preview">
+                                        <div class="rab-description-preview" style="cursor:pointer"
+                                            onclick="openEditRabItemModal('${jobId}')">
                                             ${item.description ?? ''}
                                         </div>
                                     </td>
@@ -1320,15 +1328,6 @@
                                     </td>
 
                                     <td>
-
-                                        <button
-                                            type="button"
-                                            class="btn btn-sm btn-dark"
-                                            onclick="addJobRowEdit('${categoryId ?? ''}')"
-                                        >
-                                            +
-                                        </button>
-
                                         <button
                                             type="button"
                                             class="btn btn-sm btn-secondary"
@@ -1745,20 +1744,9 @@ function rabEditCalculateSummary(){
 
     document.getElementById('rab_grand_total').value = grand;
 }
-function removeJob(id){
-    const row = document.getElementById(id);
-    if (!row) return;
-
-    delete rabEditItems[id]; // tambahkan ini, sebelumnya belum ada malah
-
-    const catId = row.dataset.categoryId || null;
-    row.remove();
-
-    if (catId) {
-        updateCategorySubtotal(catId);
-        renumberUraian(catId);
-    }
-
+function removeJob(id) {
+    delete rabEditItems[id];
+    renderEditRabItems();
     rabEditCalculateSummary();
 }
     function removeUraianEdit(id){
@@ -2056,29 +2044,54 @@ function cancelNewFloorEdit() {
         renderCategoryOptionsEdit(floor);
 
     }
-function getSelectedFloorEdit() {
+function buildJobRowHtml(item, jobId, no) {
+    return `
+    <tr class="job-row"
+        id="${jobId}"
+        data-id="${item.id ?? ''}"
+        data-floor=""
+        data-category=""
+        data-category-id=""
+        data-order="${item.order_no ?? 0}">
 
-    const select =
-        document.getElementById('rab_item_floor_edit');
+        <td class="text-center">${no}</td>
 
-    const newInput =
-        document.getElementById('rab_item_floor_news');
+        <td>
+            <div class="rab-description-preview"
+                 style="cursor:pointer"
+                 onclick="openEditRabItemModal('${jobId}')">
+                ${item.description ?? ''}
+            </div>
+        </td>
 
-    const inputWrapper =
-        document.getElementById('floorInputWrapperEdit');
+        <td>
+            <input type="number" class="form-control vol" step="0.00001"
+                   value="${Number(item.volume) || 0}"
+                   oninput="rabEditCalculate('${jobId}')">
+        </td>
 
-    if (
-        inputWrapper &&
-        !inputWrapper.classList.contains('d-none')
-    ) {
-        return newInput
-            ? newInput.value.trim()
-            : '';
-    }
+        <td>
+            <input type="text" class="form-control harga"
+                   value="${formatRupiah(item.harga ?? 0)}"
+                   data-base-price="${item.base_price ?? 0}"
+                   oninput="rabEditPriceInput('${jobId}')"
+                   onblur="formatRabEditPrice('${jobId}')">
+        </td>
 
-    return select
-        ? select.value.trim()
-        : '';
+        <td>
+            <input type="text" class="form-control total"
+                   data-value="${item.total ?? 0}"
+                   value="${formatRupiah(item.total ?? 0)}"
+                   readonly>
+        </td>
+
+        <td class="text-nowrap">
+            <button type="button" class="btn btn-sm btn-outline-dark"
+                    onclick="openEditRabItemModal('${jobId}')">✎</button>
+            <button type="button" class="btn btn-sm btn-secondary"
+                    onclick="removeJob('${jobId}')">-</button>
+        </td>
+    </tr>`;
 }
 function getSelectedCategoryEdit() {
 
@@ -2104,122 +2117,72 @@ function getSelectedCategoryEdit() {
         ? select.value.trim()
         : '';
 }
-function openEditRabItemModal(jobId) {
+function openEditRabItemModal(jobId = null) {
+    const isEdit = !!jobId;
+    const item = isEdit ? rabEditItems[jobId] : null;
 
-    const item = rabEditItems[jobId];
-
-    if (!item) {
+    if (isEdit && !item) {
         console.error('Item RAB tidak ditemukan:', jobId);
         return;
     }
-    const modalElement =
-        document.getElementById('editRabItemModal');
 
-    modalElement.dataset.jobId = jobId;
+    const modalElement = document.getElementById('editRabItemModal');
+    modalElement.dataset.jobId = jobId || '';
 
+    const description = item?.description || '';
     if (editrabDescriptionEditor) {
-
-        editrabDescriptionEditor.clipboard.dangerouslyPasteHTML(
-            item.description || ''
-        );
-
+        editrabDescriptionEditor.clipboard.dangerouslyPasteHTML(description);
     }
+    document.getElementById('rab_item_description_edit').value = description;
+    document.getElementById('rab_item_volume_edit').value = item?.volume ?? '';
 
-    document.getElementById(
-        'rab_item_description_edit'
-    ).value = item.description || '';
-
-    document.getElementById(
-        'rab_item_volume_edit'
-    ).value = item.volume ?? '';
-
-    const price =
-        document.getElementById(
-            'rab_item_price_display_edit'
-        );
-
-    const numericPrice =
-        parseFloat(item.harga) || 0;
-
-    price.value =
-        numericPrice > 0
-            ? formatRupiah(numericPrice)
-            : '';
-
+    const price = document.getElementById('rab_item_price_display_edit');
+    const numericPrice = parseFloat(item?.base_price ?? item?.harga) || 0;
+    price.value = numericPrice > 0 ? formatRupiah(numericPrice) : '';
     price.dataset.value = numericPrice;
+    document.getElementById('edit_rab_item_price').value = numericPrice;
 
-    document.getElementById(
-        'edit_rab_item_price'
-    ).value = numericPrice;
+    modalElement.querySelector('.modal-title').textContent =
+        isEdit ? 'Edit Item RAB' : 'Tambah Item RAB';
 
-    document.querySelector(
-        '#editRabItemModal .modal-title'
-    ).textContent = 'Edit Item RAB';
-
-    bootstrap.Modal
-        .getOrCreateInstance(modalElement)
-        .show();
+    bootstrap.Modal.getOrCreateInstance(modalElement).show();
 }
     
 function saveEditRabItem() {
+    const modalElement = document.getElementById('editRabItemModal');
+    const jobId = modalElement.dataset.jobId;
 
-    const floor = getSelectedFloorEdit();
-    const category = getSelectedCategoryEdit();
-
-    const description = document.getElementById('rab_item_description_edit').value.trim();
+    const isEmpty = editrabDescriptionEditor.getText().trim().length === 0;
+    const description = isEmpty ? '' : editrabDescriptionEditor.root.innerHTML;
     const volume = parseDecimal(document.getElementById('rab_item_volume_edit').value);
     const basePrice = parseRupiah(document.getElementById('rab_item_price_display_edit').value);
 
-    if (!floor) { alert('Lantai wajib diisi.'); return; }
-    if (!category) { alert('Kategori pekerjaan wajib diisi.'); return; }
-    if (!jobName) { alert('Nama pekerjaan wajib diisi.'); return; }
-    if (!satuan) { alert('Satuan wajib diisi.'); return; }
-    if (volume <= 0) { alert('Volume harus lebih besar dari 0.'); return; }
-    if (basePrice < 0) { alert('Harga satuan tidak valid.'); return; }
+    if (!description) { alert('Deskripsi wajib diisi.'); return; }
+    if (volume <= 0) { alert('Qty harus lebih besar dari 0.'); return; }
+    if (basePrice < 0) { alert('Harga tidak valid.'); return; }
 
-    const price = calculateItemPriceEdit(basePrice); // ✅ fungsi edit
+    const price = calculateItemPriceEdit(basePrice);
     const total = volume * price;
 
-    const jobId = document.getElementById('rab_item_id_edit').value; // ✅ suffix _edit
-
-    if (jobId && rabEditItems[jobId]) { // ✅ rabEditItems
-
+    if (jobId && rabEditItems[jobId]) {
         rabEditItems[jobId] = {
             ...rabEditItems[jobId],
-            floor_name: floor,
-            category_name: category,
-            description: description,
-            volume: volume,
-            base_price: basePrice,
-            harga: price, // ✅ konsisten "harga"
-            total: total
+            description, volume,
+            base_price: basePrice, harga: price, total
         };
-
     } else {
-
         const newId = 'job_new_' + (++itemCounter);
-
-        rabEditItems[newId] = { // ✅ rabEditItems
+        rabEditItems[newId] = {
             id: null,
-            floor_name: floor,
-            category_name: category,
-            job_name: jobName,
-            description: description,
-            satuan: satuan,
-            volume: volume,
-            base_price: basePrice,
-            harga: price,
-            total: total,
+            description, volume,
+            base_price: basePrice, harga: price, total,
             order_no: Object.keys(rabEditItems).length + 1
         };
     }
 
-    renderEditRabItems();       // pastikan fungsi ini juga baca rabEditItems
+    renderEditRabItems();
     rabEditCalculateSummary();
-
-    const modalElement = document.getElementById('editRabItemModal');
-    const modal = bootstrap.Modal.getInstance(modalElement);
-    if (modal) modal.hide();
+    bootstrap.Modal.getInstance(modalElement)?.hide();
 }
 function calculateItemPriceEdit(basePrice) {
     basePrice = Number(basePrice) || 0;
@@ -2272,199 +2235,26 @@ function calculateItemPriceEdit(basePrice) {
         calculateSummary();
     }
 function renderEditRabItems() {
-
-    const tbody =
-        document.getElementById('rab_offerItemsBody_edit');
-
+    const tbody = document.getElementById('rab_offerItemsBody_edit');
     if (!tbody) return;
-
-    tbody.innerHTML = '';
 
     const entries = Object.entries(rabEditItems);
 
     if (entries.length === 0) {
-
         tbody.innerHTML = `
             <tr class="empty-rab-row">
-                <td colspan="7" class="text-center text-muted py-5">
+                <td colspan="6" class="text-center text-muted py-5">
                     Belum ada pekerjaan.
                 </td>
-            </tr>
-        `;
-
+            </tr>`;
         return;
     }
 
-    // Kelompokkan per lantai -> kategori
-    const floorGroups = {};
+    tbody.innerHTML = entries
+        .map(([jobId, item], i) => buildJobRowHtml(item, jobId, i + 1))
+        .join('');
 
-    entries.forEach(([jobId, item]) => {
-
-        const floor = item.floor_name || 'Tanpa Lantai';
-        const category = item.category_name || 'Tanpa Kategori';
-
-        if (!floorGroups[floor]) floorGroups[floor] = {};
-        if (!floorGroups[floor][category]) floorGroups[floor][category] = [];
-
-        floorGroups[floor][category].push({ jobId, ...item });
-
-    });
-
-    let catIdx = 0;
-    let categoryLetterIndex = 0;
-
-    Object.entries(floorGroups).forEach(([floorName, categories]) => {
-
-        const floorId = 'floor_' + catIdx + '_' + Date.now();
-
-        tbody.insertAdjacentHTML(
-            'beforeend',
-            `
-            <tr class="table-secondary fw-bold floor-row"
-                id="${floorId}"
-                data-floor="${escapeHtml(floorName)}">
-                <td colspan="7">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="drag-handle">
-                            <i class="ti ti-grip-vertical"></i>
-                        </span>
-                        <span>${escapeHtml(floorName)}</span>
-                    </div>
-                </td>
-            </tr>
-            `
-        );
-
-        Object.entries(categories).forEach(([categoryName, categoryItems]) => {
-
-            const categoryId = 'cat_' + catIdx++;
-            const categoryLetter = numberToLetters(categoryLetterIndex++);
-
-            const categoryTotal = categoryItems.reduce(
-                (sum, item) => sum + (Number(item.total) || 0),
-                0
-            );
-
-            tbody.insertAdjacentHTML(
-                'beforeend',
-                `
-                <tr class="table-secondary fw-bold category-row"
-                    id="${categoryId}"
-                    data-category="${escapeHtml(categoryName)}"
-                    data-floor="${escapeHtml(floorName)}">
-
-                    <td>
-                        <span class="drag-handle me-2">
-                            <i class="ti ti-grip-vertical"></i>
-                        </span>
-                        ${categoryLetter}
-                    </td>
-
-                    <td colspan="4">
-                        <span class="category-text">
-                            ${escapeHtml(categoryName)}
-                        </span>
-                    </td>
-
-                    <td>
-                        <input class="form-control subtotal-category"
-                            data-category="${categoryId}"
-                            value="${formatRupiah(categoryTotal)}"
-                            readonly>
-                    </td>
-
-                    <td>
-                        <button type="button"
-                            class="btn btn-sm btn-secondary"
-                            onclick="removeCat('${categoryId}')">
-                            -
-                        </button>
-                    </td>
-                </tr>
-                `
-            );
-
-            let itemNo = 1;
-
-            categoryItems.forEach(item => {
-
-                const jobId = item.jobId;
-
-                tbody.insertAdjacentHTML(
-                    'beforeend',
-                    `
-                    <tr class="job-row"
-                        id="${jobId}"
-                        data-id="${item.id ?? ''}"
-                        data-floor="${escapeHtml(floorName)}"
-                        data-category="${escapeHtml(categoryName)}"
-                        data-category-id="${categoryId}"
-                        data-order="${item.order_no ?? 0}">
-
-                        <td class="text-center">${itemNo}</td>
-
-                        <td>
-                            <input type="text"
-                                class="form-control job-name"
-                                value="${escapeHtml(item.job_name ?? '')}">
-                        </td>
-
-                        <td>
-                            <input type="text"
-                                class="form-control sat"
-                                value="${escapeHtml(item.satuan ?? '')}">
-                        </td>
-
-                        <td>
-                            <input type="number"
-                                class="form-control vol"
-                                step="0.00001"
-                                value="${item.volume ?? 0}"
-                                oninput="rabEditCalculate('${jobId}')">
-                        </td>
-
-                        <td>
-                            <input type="text"
-                                class="form-control harga"
-                                value="${formatRupiah(item.harga ?? 0)}"
-                                data-base-price="${item.base_price ?? 0}"
-                                oninput="rabEditPriceInput('${jobId}')"
-                                onblur="formatRabEditPrice('${jobId}')">
-                        </td>
-
-                        <td>
-                            <input type="text"
-                                class="form-control total"
-                                data-value="${item.total ?? 0}"
-                                value="${formatRupiah(item.total ?? 0)}"
-                                readonly>
-                        </td>
-
-                        <td>
-                            <button type="button"
-                                class="btn btn-sm btn-dark"
-                                onclick="addJobRowEdit('${categoryId}')">
-                                +
-                            </button>
-                            <button type="button"
-                                class="btn btn-sm btn-secondary"
-                                onclick="removeJob('${jobId}')">
-                                -
-                            </button>
-                        </td>
-                    </tr>
-                    `
-                );
-
-                itemNo++;
-
-            });
-
-        });
-
-    });
-    updateSortableEdit()
-
+    updateSortableEdit();
 }
     function updateItemVolume(id, value) {
         const item =
@@ -2571,62 +2361,51 @@ function renderEditRabItems() {
         rabEditCalculateSummary()
     });
 
-function prepareRabEditItemsForSubmit() {
+    function prepareRabEditItemsForSubmit() {
 
-    document.getElementById('rab_profit_edit').value = globalProfit;
-    document.getElementById('rab_overhead_edit').value = globalOverhead;
+        document.getElementById('rab_profit_edit').value = globalProfit;
+        document.getElementById('rab_overhead_edit').value = globalOverhead;
 
-    const container = document.getElementById('rabEditItemsContainer');
+        const container = document.getElementById('rabEditItemsContainer');
 
-    if (!container) {
-        console.error('rabEditItemsContainer tidak ditemukan');
-        return;
-    }
+        if (!container) {
+            console.error('rabEditItemsContainer tidak ditemukan');
+            return;
+        }
 
+        container.innerHTML = '';
 
-    container.innerHTML = '';
+        // hitung ulang semua baris sesuai kondisi DOM saat ini
+        recalcAfterDrag();
 
-    // pastikan urutan sesuai posisi DOM saat ini (habis drag/tambah/hapus)
-    recalcAfterDrag();
+        let index = 0;
 
-    let index = 0;
+        document.querySelectorAll('#rab_offerItemsBody_edit .job-row').forEach(row => {
 
-    document.querySelectorAll('#rab_offerItemsBody_edit .job-row').forEach(row => {
+            const item = rabEditItems[row.id];
+            if (!item) return;
 
-        const rowId = row.id;
-        const item = rabEditItems[rowId];
+            const fields = {
+                id: item.id ?? '',
+                description: item.description || '',
+                volume: Number(row.querySelector('.vol')?.value) || 0,
+                base_price: Number(row.querySelector('.harga')?.dataset.basePrice) || 0,
+                price: item.harga ?? 0,
+                total: Number(row.querySelector('.total')?.dataset.value) || 0,
+                order_no: index + 1
+            };
 
-        if (!item) return;
+            Object.entries(fields).forEach(([key, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = `items[${index}][${key}]`;
+                input.value = value ?? '';
+                container.appendChild(input);
+            });
 
-        const fields = {
-            id: item.id ?? '',
-            floor_name: row.dataset.floor,
-            category_name: row.dataset.category,
-            job_name: row.querySelector('.job-name')?.value.trim() || '',
-            description: item.description || '',
-            satuan: row.querySelector('.sat')?.value.trim() || '',
-            volume: Number(row.querySelector('.vol')?.value) || 0,
-            base_price: Number(row.querySelector('.harga')?.dataset.basePrice) || 0,
-            price: item.harga ?? 0,
-            total: Number(row.querySelector('.total')?.dataset.value) || 0,
-            order_no: index + 1
-        };
-
-        Object.entries(fields).forEach(([key, value]) => {
-
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = `items[${index}][${key}]`;
-            input.value = value ?? '';
-            container.appendChild(input);
-
+            index++;
         });
-
-        index++;
-
-    });
-
-}
+    }
 
     document.addEventListener('DOMContentLoaded', function () {
         initRupiahInputsEdit();

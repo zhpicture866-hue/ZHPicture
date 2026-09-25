@@ -632,26 +632,40 @@ Route::middleware(['auth', 'permission:lihat daftar user'])->group(function () {
 });
 });
 
-Route::prefix('projects/{project}')
-    ->middleware(['auth'])
-    ->group(function () {
-        Route::post(
-    '/build-termin',
+Route::post(
+    '/projects/{project}/build-termin',
     [\App\Http\Controllers\BuildTerminController::class, 'store']
 )->name('projects.build-termin.store');
 Route::put(
-    '/build-termin',
+    '/projects/{project}/build-termin',
     [\App\Http\Controllers\BuildTerminController::class, 'update']
 )->name('projects.build-termin.update');
-    });
+   Route::post('projects/{project}/invoice/generate', [ProjectController::class, 'generateInvoicesFromTermins'])
+       ->name('projects.invoice.generate');
 
-Route::get('/projects/{project}/invoice-panel',
-[ProjectController::class,'invoicePanel'])
-->name('projects.invoice.panel');
-Route::get(
-    '/projects/items/{item}/tambahan',
-    [ProjectController::class, 'loadTambahan']
-);
+Route::prefix('projects/{project}')
+    ->middleware(['auth'])
+    ->group(function () {
+
+        // Download invoice build per termin
+        Route::get(
+            '/invoice/build/termin/{termin}',
+            [InvoiceBuildController::class, 'invoiceBuild']
+        )->name('projects.invoice.build');
+
+        Route::get(
+'/invoice-build-justek',
+[InvoiceBuildController::class,'invoiceJustek']
+)->name('projects.invoice.build.justek');
+        // Approve invoice build
+        Route::post('/invoice-build-justek-auto',
+    [InvoiceBuildController::class,'autoJustek']
+)->name('projects.invoice.justek.auto');
+        Route::post(
+            '/invoice/build/{invoice}/approve',
+            [InvoiceBuildController::class, 'approve']
+        )->name('projects.invoice.build.approve');
+    });
 Route::post(
     '/projects/{project}/sync-build',
     [ProjectController::class, 'syncBuildProcess']

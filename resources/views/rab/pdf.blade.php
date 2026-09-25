@@ -50,12 +50,12 @@
     $diskon = (float) $offer->discount;
 @endphp
 
-{{-- <div class="header">
-    <img src="{{ public_path('images/header-penawaran.jpg') }}">
+<div class="header">
+    <img src="{{ public_path('images/header-penawaran.png') }}">
 </div>
 <div class="footer">
-    <img src="{{ public_path('images/footer-penawaran.jpg') }}">
-</div> --}}
+    <img src="{{ public_path('images/footer-penawaran.png') }}">
+</div>
 
 <div class="content">
 
@@ -104,16 +104,6 @@
                                 {!! $desc !!}
                             </div>
                         @endif
-                        @if($loop->first && ($project->start_date || $project->project_location))
-                            <div class="desc-line" style="margin-top:6px">
-                                @if($project->start_date)
-                                    Tanggal Event : {{ $project->start_date->translatedFormat('d F Y') }}<br>
-                                @endif
-                                @if($project->project_location)
-                                    Lokasi Event : {{ $project->project_location }}
-                                @endif
-                            </div>
-                        @endif
                     </td>
                     <td class="text-center">{{ rtrim(rtrim(number_format($item->volume, 5, '.', ''), '0'), '.') }}</td>
                     <td class="text-right">{{ $rp($item->price) }}</td>
@@ -126,14 +116,14 @@
             @endfor
         </tbody>
     </table>
-    {{-- <div class="desc-line" style="margin-top:6px">
+    <div class="desc-line" style="margin-top:6px">
         @if($project->start_date)
             Tanggal Event : {{ $project->start_date->translatedFormat('d F Y') }}<br>
         @endif
         @if($project->project_location)
             Lokasi Event : {{ $project->project_location }}
         @endif
-    </div> --}}
+    </div>
     @php
         $rounded = floor((float) $offer->grand_total / 100000) * 100000;
     @endphp
@@ -173,12 +163,12 @@
         </tr>
     </table>
 
-    @if($offer->notes)
+    {{-- @if($offer->notes)
         <div class="notes">
             <span class="bold">Catatan:</span><br>
             {!! nl2br(e($offer->notes)) !!}
         </div>
-    @endif
+    @endif --}}
 
 </div>
 </body>

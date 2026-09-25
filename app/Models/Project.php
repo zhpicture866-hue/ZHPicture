@@ -162,6 +162,11 @@ public function weeklyReports()
     {
         return $this->belongsTo(ProjectType::class, 'project_type');
     }
+public function buildTermins()
+{
+    return $this->hasMany(BuildTermin::class)
+        ->orderBy('termin_no');
+}
 
 public function progressSnapshots()
 {

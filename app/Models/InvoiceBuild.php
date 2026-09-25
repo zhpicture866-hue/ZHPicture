@@ -9,9 +9,14 @@ class InvoiceBuild extends Model
 {
     use HasUuid;
 
-    const TYPE_BUILD = 'build';
-    const TYPE_JUSTEK = 'justek';
-
+    const TYPE_WEDDING = 'wedding';
+    const TYPE_EVENT = 'event';
+    const STATUS_DRAFT    = 'draft';
+    const STATUS_WAITING  = 'waiting_approval';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_REJECTED = 'rejected';
+    const STATUS_PAID     = 'paid';
+    protected $table = 'zhpicture.invoice_builds';
     protected $casts = [
         'invoice_date' => 'date',
         'approved_at'  => 'datetime',
@@ -46,5 +51,10 @@ class InvoiceBuild extends Model
         public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+        public function scopeOrderByTermin($query)
+    {
+        return $query->orderBy('termin');
     }
 }

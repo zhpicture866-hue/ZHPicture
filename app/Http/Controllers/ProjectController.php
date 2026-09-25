@@ -392,4 +392,61 @@ class ProjectController extends Controller
 
         return response()->json(['status' => 'failed', 'message' => 'Unable to delete']);
     }
+
+        public function generateInvoicesFromTermins(Project $project)
+    {
+        $project->load('buildTermins');
+
+        if ($project->buildTermins->isEmpty()) {
+            return back()->with('error', 'Setting Termin belum diisi, invoice tidak bisa dibuat.');
+        }
+
+        if (Invoice::where('project_id', $project->id)->exists()) {
+            return back()->with('error', 'Invoice untuk proyek ini sudah pernah dibuat.');
+        }
+
+        DB::transaction(function () use ($project) {
+            $termins = $project->buildTermins->sortBy('termin_no')->values();
+
+            foreach ($termins as $i => $termin) {
+                Invoice::create([
+                    'project_id'     => $project->id,
+                    'invoice_number' => $this->generateInvoiceNumber(),
+                    'invoice_date'   => now(),
+                    'invoice_type'   => Invoice::TYPE_WEDDING,
+                    'termin_no'      => $termin->termin_no,
+                    'termin_label'   => $termin->description ?: ('Termin ' . $termin->termin_no),
+                    'amount'         => $termin->amount,
+                    // termin pertama langsung bisa didownload, sisanya nunggu giliran
+                    'status'         => $i === 0 ? Invoice::STATUS_WAITING : Invoice::STATUS_DRAFT,
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('projects.create', ['project_id' => $project->id])
+            ->with('success', 'Invoice berhasil dibuat dari Setting Termin (' . $project->buildTermins->count() . ' termin).');
+    }
+
+    private function generateInvoiceNumber(): string
+{
+    $year = now()->format('Y');
+
+    $lastInvoice = Invoice::where('invoice_number', 'like', "ZH.I.{$year}.%")
+        ->orderByDesc('invoice_number')
+        ->first();
+
+    if ($lastInvoice) {
+        $lastNumber = (int) substr($lastInvoice->invoice_number, -2);
+        $nextNumber = $lastNumber + 1;
+    } else {
+        $nextNumber = 1;
+    }
+
+    return sprintf(
+        'ZH.I.%s.%02d',
+        $year,
+        $nextNumber
+    );
+}
 }

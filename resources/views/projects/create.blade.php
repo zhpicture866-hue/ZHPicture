@@ -84,85 +84,179 @@
                             'hasData' => (bool) ($project->rab && $project->rab->items()->exists()),
                             'action'  => '<button type="submit" form="rabForm" class="btn btn-dark" title="Simpan RAB"><i class="ti ti-device-floppy me-1"></i></button>',
                         ],
-                        'Invoice' => [
-                            'create'  => 'projects.steps.invoice',
-                            'edit'    => null, // partial 'create'-nya sendiri sudah handle tampilan "sudah ada termin" vs "belum"
-                            'detail'  => null,
-                            'hasData' => false,
+                        'Setting Termin' => [
+                            'create'  => 'projects.steps.build-termin',
+                            'edit'    => 'projects.edit.build-termin-form',
+                            'detail'  => 'projects.details.build-termins',
+                            // FIX: tadinya hardcode `false` -> gak akan pernah nampilin ringkasan+edit
+                            // walau termin udah pernah diisi. Sekarang dihitung beneran dari data.
+                            'hasData' => (bool) $project->buildTermins()->exists(),
                             'action'  => null,
                         ],
                     ];
                 @endphp
 
                 @foreach($project->levels->sortBy('level_order') as $level)
-                    @continue($activeStep < $level->level_order + 1) {{-- step ini belum sampai giliran, jangan tampilkan dulu --}}
+                    @continue($activeStep < $level->level_order + 1)
 
                     @php
-                        $config = $stepViews[$level->level_name] ?? null;
                         $stepTitle = ($level->level_order + 1) . '. ' . $level->level_name;
                         $slug = \Illuminate\Support\Str::slug($level->level_name);
                     @endphp
 
                     <div id="step-{{ $slug }}" class="step-section">
-                        @if(! $config)
-                            {{-- Jenis proyek ini punya step baru yang belum ada tampilannya.
-                                 Tambahkan entry-nya di $stepViews di atas. --}}
-                            <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body">
-                                <div class="alert alert-warning mb-0">
-                                    Belum ada tampilan untuk step "<strong>{{ $level->level_name }}</strong>".
-                                    Hubungi developer untuk menambahkan partial view-nya.
-                                </div>
-                            </x-collapse-card>
 
-                        @elseif($config['detail'] && $config['hasData'])
-                            {{-- Sudah ada datanya -> tampil ringkas, bisa dibuka buat edit --}}
-                            <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body">
-                                <x-slot:actions>
-                                    @can('ubah data proyek')
-                                    <button type="button"
-                                            class="btn btn-sm btn-dark btn-toggle-view-edit"
-                                            data-view="{{ $slug }}-view"
-                                            data-edit="{{ $slug }}-edit"
-                                            title="Edit Data">
-                                        <i class="ti ti-edit"></i>
-                                    </button>
-                                    @endcan
-                                </x-slot:actions>
-                                <div id="{{ $slug }}-view">
-                                    @include($config['detail'])
-                                </div>
-                                <div id="{{ $slug }}-edit" style="display:none;">
-                                    
-                                    @include($config['edit'])
-                                    <div class="d-flex justify-content-between align-items-center mt-4">
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-secondary btn-cancel-view-edit me-2"
-                                                data-view="{{ $slug }}-view"
-                                                data-edit="{{ $slug }}-edit">
-                                            <i class="ti ti-x me-1"></i>
-                                            Batal
-                                        </button>
+                        @if($level->level_name === 'Invoice')
 
-                                        <button type="submit"
-                                                form="rab-edit-form"
-                                                class="btn btn-sm btn-dark">
-                                            <i class="ti ti-device-floppy me-1"></i>
-                                            Update Penawaran
-                                        </button>
+                            {{-- ============== INVOICE — inline, gak pakai @include ============== --}}
+                            <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body">
+                                    @php
+                                        $termins = $project->buildTermins->sortBy('termin_no')->values();
+
+                                        $firstTermin  = $termins->first();
+                                        $firstInvoice = $firstTermin
+                                            ? $project->invoicebuilds->where('termin', $firstTermin->termin_no)->first()
+                                            : null;
+                                    @endphp
+                                @if($invoiceTermins->isEmpty())
+
+                                    {{-- Belum ada invoice sama sekali -> generate dari BuildTermin yang udah di-setting --}}
+                                    @if($project->buildTermins->isEmpty())
+                                        <div class="alert alert-warning mb-0">
+                                            Setting Termin belum diisi. Isi dulu di step "Setting Termin" sebelum invoice bisa dibuat.
+                                        </div>
+                                    @else
+                                        <p class="text-muted mb-3">
+                                            Ada {{ $project->buildTermins->count() }} termin dari Setting Termin, total
+                                            <strong>Rp {{ number_format($project->buildTermins->sum('amount'), 0, ',', '.') }}</strong>.
+                                        </p>
+                                        <form action="{{ route('projects.invoice.generate', $project->id) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn btn-dark">
+                                                <i class="ti ti-file-invoice"></i> Buat Invoice dari Setting Termin
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                @else
+
+                                    {{-- Sudah ada rencana pembayaran -> kartu per termin, tombol download langsung di sini --}}
+                                    <div class="row">
+                                        @foreach($termins as $index => $buildTermin)
+                                            @php
+                                                $t = $buildTermin->termin_no;
+                                                $inv = $project->invoicebuilds->where('termin', $t)->first();
+
+                                                $prevInv = $index > 0
+                                                    ? $project->invoicebuilds->where('termin', $termins[$index - 1]->termin_no)->first()
+                                                    : null;
+                                                $canDownload = $index == 0 || ($prevInv && $prevInv->downloaded_at);
+                                            @endphp
+
+                                            <div class="col-md-3 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body text-center">
+                                                        <h5>Termin {{ $t }}</h5>
+
+                                                        @if($inv)
+                                                            <span class="badge
+                                                                @if($inv->status == 'approved') bg-success @else bg-warning @endif
+                                                                text-white mb-2">
+                                                                {{ strtoupper($inv->status) }}
+                                                            </span>
+                                                            <br>
+                                                        @endif
+
+                                                        @if($canDownload)
+                                                            <a href="{{ route('projects.invoice.build', ['project' => $project->id, 'termin' => $t]) }}"
+                                                            class="btn btn-dark btn-sm mb-2" target="_blank">
+                                                                <i class="ti ti-download"></i>
+                                                                {{ $inv && $inv->downloaded_at ? 'Lihat Invoice' : 'Download Invoice Termin' }}
+                                                            </a>
+
+                                                            @if(
+                                                                $inv && $inv->downloaded_at &&
+                                                                !$inv->approved_at &&
+                                                                ($index == 0 || optional($prevInv)->approved_at)
+                                                            )
+                                                                <br>
+                                                                <form action="{{ route('projects.invoice.build.approve', [$project->id, $inv->id]) }}"
+                                                                    method="POST"
+                                                                    class="approve-form"
+                                                                    data-title="Approve Termin {{ $t }}?"
+                                                                    data-text="Invoice termin {{ $t }} akan disetujui.">
+                                                                    @csrf
+                                                                    <button class="btn btn-success btn-sm">
+                                                                        Approve Termin {{ $t }}
+                                                                    </button>
+                                                                </form>
+                                                            @endif
+                                                        @else
+                                                            <span class="text-muted">Belum tersedia</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
                                     </div>
-                                </div>
+
+                                @endif
+
                             </x-collapse-card>
+                            {{-- ============== /INVOICE ============== --}}
 
                         @else
-                            {{-- Step ini yang sedang dikerjakan / belum ada data -> langsung tampilkan form kosongnya --}}
-                            <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body" :sticky="false">
-                                @if($config['action'])
+
+                            @php $config = $stepViews[$level->level_name] ?? null; @endphp
+
+                            @if(! $config)
+                                <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body">
+                                    <div class="alert alert-warning mb-0">
+                                        Belum ada tampilan untuk step "<strong>{{ $level->level_name }}</strong>".
+                                        Hubungi developer untuk menambahkan partial view-nya.
+                                    </div>
+                                </x-collapse-card>
+
+                            @elseif($config['detail'] && $config['hasData'])
+                                <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body">
                                     <x-slot:actions>
-                                        {!! $config['action'] !!}
+                                        @can('ubah data proyek')
+                                        <button type="button"
+                                                class="btn btn-sm btn-dark btn-toggle-view-edit"
+                                                data-view="{{ $slug }}-view"
+                                                data-edit="{{ $slug }}-edit"
+                                                title="Edit Data">
+                                            <i class="ti ti-edit"></i>
+                                        </button>
+                                        @endcan
                                     </x-slot:actions>
-                                @endif
-                                @include($config['create'])
-                            </x-collapse-card>
+                                    <div id="{{ $slug }}-view">
+                                        @include($config['detail'])
+                                    </div>
+                                    <div id="{{ $slug }}-edit" style="display:none;">
+                                        @include($config['edit'])
+                                        <div class="d-flex justify-content-between align-items-center mt-4">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary btn-cancel-view-edit me-2"
+                                                    data-view="{{ $slug }}-view"
+                                                    data-edit="{{ $slug }}-edit">
+                                                <i class="ti ti-x me-1"></i> Batal
+                                            </button>
+                                        </div>
+                                    </div>
+                                </x-collapse-card>
+
+                            @else
+                                <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body" :sticky="false">
+                                    @if($config['action'])
+                                        <x-slot:actions>
+                                            {!! $config['action'] !!}
+                                        </x-slot:actions>
+                                    @endif
+                                    @include($config['create'])
+                                </x-collapse-card>
+                            @endif
+
                         @endif
                     </div>
                 @endforeach
@@ -464,7 +558,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let rabEditLoaded = false;
 
-    const rabId = @json($project->rab?->id);
+    const rabId = @json($project?->rab?->id);
     const rabEdit = document.getElementById("penawaran-harga-edit");
 
     if (!rabId || !rabEdit) return;
