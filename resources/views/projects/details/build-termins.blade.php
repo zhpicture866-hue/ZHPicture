@@ -133,34 +133,3 @@
     </table>
 
 </div>
-
-<div class="card border-0 bg-light mt-4">
-
-    <div class="card-body">
-
-        <div class="d-flex align-items-center justify-content-between">
-
-            <div>
-                <div class="text-muted small mb-1">
-                    MASA PEMELIHARAAN
-                </div>
-
-                <div class="fs-3 fw-bold">
-                    {{ $project->masa_pemeliharaan ?? 90 }} Hari
-                </div>
-
-                <div class="text-muted small mt-1">
-                    Masa pemeliharaan setelah selesai pekerjaan dan
-                    serah terima hasil pekerjaan.
-                </div>
-            </div>
-
-            <div class="avatar avatar-lg bg-white shadow-sm">
-                <i class="ti ti-calendar-time fs-2"></i>
-            </div>
-
-        </div>
-
-    </div>
-
-</div>

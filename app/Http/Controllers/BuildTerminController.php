@@ -176,7 +176,9 @@ public function store(Request $request, $projectId)
         'levels',
     ])->findOrFail($projectId);
 
-    if ((int) $project->project_type !== 3) {
+    $currentLevel = $project->levels->firstWhere('level_name', 'Setting Termin');
+
+    if (!$currentLevel) {
         abort(404);
     }
 

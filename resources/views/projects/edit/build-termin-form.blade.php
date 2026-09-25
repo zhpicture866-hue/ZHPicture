@@ -254,58 +254,8 @@
         </div>
 
     </div>
-    <div class="d-flex align-items-center justify-content-between mb-3 mt-4">
-        <div>
-            <h3 class="mb-1 fw-bold">
-                Setting Masa Pemeliharaan
-            </h3>
 
-            <div class="text-muted">
-                Setting masa pemeliharaan untuk ditampilkan ke form kontrak.
-            </div>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-4">
-
-            <div class="row align-items-end">
-
-                <div class="col-md-6">
-
-                    <label class="form-label fw-semibold">
-                        Masa Pemeliharaan
-                    </label>
-
-                    <div class="input-group">
-
-                        <input
-                            type="number"
-                            name="masa_pemeliharaan"
-                            class="form-control"
-                            min="0"
-                            step="1"
-                            value="{{ old('masa_pemeliharaan', $project->masa_pemeliharaan) }}"
-                            required
-                        >
-
-                        <span class="input-group-text">
-                            Hari
-                        </span>
-
-                    </div>
-
-                    <div class="form-hint mt-2">
-                        Contoh: 90 hari, 120 hari, atau 180 hari.
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-    </div>
-    <div class="d-flex justify-content-end mt-4 gap-2">
+    {{-- <div class="d-flex justify-content-end mt-4 gap-2">
 
         <button type="submit" class="btn btn-dark" id="btn-update-termin">
             <i class="ti ti-device-floppy"></i>
@@ -314,7 +264,7 @@
         <button type="button" class="btn btn-secondary btn-cancel">
             <i class="ti ti-x"></i> Batal
         </button>
-    </div>
+    </div> --}}
 
 </form>
 

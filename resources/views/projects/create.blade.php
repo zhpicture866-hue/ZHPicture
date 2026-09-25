@@ -84,6 +84,17 @@
                             'hasData' => (bool) ($project->rab && $project->rab->items()->exists()),
                             'action'  => '<button type="submit" form="rabForm" class="btn btn-dark" title="Simpan RAB"><i class="ti ti-device-floppy me-1"></i></button>',
                         ],
+                        'Penawaran Harga' => [
+                            'create'  => 'projects.steps.rab-process',
+                            'edit'    => 'projects.edit.rab-process',
+                            'detail'  => 'projects.details.rab-process',
+                            'hasData' => (bool) ($project->rab && $project->rab->items()->exists()),
+                            'formId'  => 'rab-edit-form',
+                            'action'  => '<button type="submit" form="rabForm" class="btn btn-dark" title="Simpan RAB">
+                                            <i class="ti ti-device-floppy me-1"></i>
+                                        </button>',
+                            'updateText' => 'Simpan Perubahan RAB',
+                        ],
                         'Setting Termin' => [
                             'create'  => 'projects.steps.build-termin',
                             'edit'    => 'projects.edit.build-termin-form',
@@ -92,6 +103,15 @@
                             // walau termin udah pernah diisi. Sekarang dihitung beneran dari data.
                             'hasData' => (bool) $project->buildTermins()->exists(),
                             'action'  => null,
+                        ],
+                        'Setting Termin' => [
+                            'create'  => 'projects.steps.build-termin',
+                            'edit'    => 'projects.edit.build-termin-form',
+                            'detail'  => 'projects.details.build-termins',
+                            'hasData' => (bool) $project->buildTermins()->exists(),
+                            'formId'  => 'build-termin-edit-form',
+                            'action'  => null,
+                            'updateText' => 'Simpan Perubahan Termin',
                         ],
                     ];
                 @endphp
@@ -234,14 +254,30 @@
                                         @include($config['detail'])
                                     </div>
                                     <div id="{{ $slug }}-edit" style="display:none;">
+
                                         @include($config['edit'])
+
                                         <div class="d-flex justify-content-between align-items-center mt-4">
+
                                             <button type="button"
-                                                    class="btn btn-sm btn-outline-secondary btn-cancel-view-edit me-2"
+                                                    class="btn btn-sm btn-outline-secondary btn-cancel-view-edit"
                                                     data-view="{{ $slug }}-view"
                                                     data-edit="{{ $slug }}-edit">
-                                                <i class="ti ti-x me-1"></i> Batal
+                                                <i class="ti ti-x me-1"></i>
+                                                Batal
                                             </button>
+
+                                            @can('ubah data proyek')
+                                                @if(!empty($config['formId']))
+                                                    <button type="submit"
+                                                            form="{{ $config['formId'] }}"
+                                                            class="btn btn-dark">
+                                                        <i class="ti ti-device-floppy me-1"></i>
+                                                        {{ $config['updateText'] ?? 'Simpan Perubahan' }}
+                                                    </button>
+                                                @endif
+                                            @endcan
+
                                         </div>
                                     </div>
                                 </x-collapse-card>
