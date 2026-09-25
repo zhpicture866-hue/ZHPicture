@@ -135,7 +135,7 @@
 
                                         $firstTermin  = $termins->first();
                                         $firstInvoice = $firstTermin
-                                            ? $project->invoicebuilds->where('termin', $firstTermin->termin_no)->first()
+                                            ? $project->invoices->where('termin', $firstTermin->termin_no)->first()
                                             : null;
                                     @endphp
                                 @if($invoiceTermins->isEmpty())
@@ -165,10 +165,10 @@
                                         @foreach($termins as $index => $buildTermin)
                                             @php
                                                 $t = $buildTermin->termin_no;
-                                                $inv = $project->invoicebuilds->where('termin', $t)->first();
+                                                $inv = $project->invoices->where('termin', $t)->first();
 
                                                 $prevInv = $index > 0
-                                                    ? $project->invoicebuilds->where('termin', $termins[$index - 1]->termin_no)->first()
+                                                    ? $project->invoices->where('termin', $termins[$index - 1]->termin_no)->first()
                                                     : null;
                                                 $canDownload = $index == 0 || ($prevInv && $prevInv->downloaded_at);
                                             @endphp
