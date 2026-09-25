@@ -138,25 +138,12 @@
                                             ? $project->invoices->where('termin', $firstTermin->termin_no)->first()
                                             : null;
                                     @endphp
-                                @if($invoiceTermins->isEmpty())
+                                @if($termins->isEmpty())
 
-                                    {{-- Belum ada invoice sama sekali -> generate dari BuildTermin yang udah di-setting --}}
-                                    @if($project->buildTermins->isEmpty())
-                                        <div class="alert alert-warning mb-0">
-                                            Setting Termin belum diisi. Isi dulu di step "Setting Termin" sebelum invoice bisa dibuat.
-                                        </div>
-                                    @else
-                                        <p class="text-muted mb-3">
-                                            Ada {{ $project->buildTermins->count() }} termin dari Setting Termin, total
-                                            <strong>Rp {{ number_format($project->buildTermins->sum('amount'), 0, ',', '.') }}</strong>.
-                                        </p>
-                                        <form action="{{ route('projects.invoice.generate', $project->id) }}" method="POST">
-                                            @csrf
-                                            <button type="submit" class="btn btn-dark">
-                                                <i class="ti ti-file-invoice"></i> Buat Invoice dari Setting Termin
-                                            </button>
-                                        </form>
-                                    @endif
+                                    <div class="alert alert-warning mb-0">
+                                        Setting Termin belum diisi.
+                                        Isi dulu di step "Setting Termin".
+                                    </div>
 
                                 @else
 
@@ -165,10 +152,10 @@
                                         @foreach($termins as $index => $buildTermin)
                                             @php
                                                 $t = $buildTermin->termin_no;
-                                                $inv = $project->invoices->where('termin', $t)->first();
+                                                $inv = $project->invoicebuilds->where('termin', $t)->first();
 
                                                 $prevInv = $index > 0
-                                                    ? $project->invoices->where('termin', $termins[$index - 1]->termin_no)->first()
+                                                    ? $project->invoicebuilds->where('termin', $termins[$index - 1]->termin_no)->first()
                                                     : null;
                                                 $canDownload = $index == 0 || ($prevInv && $prevInv->downloaded_at);
                                             @endphp

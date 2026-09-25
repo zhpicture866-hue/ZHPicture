@@ -56,7 +56,7 @@ p {
 
 {{-- HEADER --}}
 <div class="header">
-    <img src="{{ public_path('images/header-invoice.jpg') }}" style="width:100%;">
+    <img src="{{ public_path('images/header-penawaran.png') }}" style="width:100%;">
 </div>
 
 <div style="height:20px;"></div>
@@ -66,9 +66,8 @@ p {
     <!-- KIRI -->
     <td width="60%" valign="top">
         <table class="no-border">
-            <tr><td>CP</td><td>: +62 851-8952-3863</td></tr>
-            <tr><td>Email</td><td>: antosaarchitect@gmail.com</td></tr>
-            <tr><td>Website</td><td>: antosaarchitect.com</td></tr>
+            <tr><td>CP</td><td>: +62838 7424 3693</td></tr>
+            <tr><td>Email</td><td>: zoelhapner@gmail.com</td></tr>
         </table>
     </td>
 
@@ -213,16 +212,16 @@ Rp {{ number_format($inv->amount,0,',','.') }}
     margin-top:15px;
 ">
 
-    <p>PT. Tosa Ahmad Jaya<br>
-       <strong>Antosa Architect</strong>
+    <p>Hormat Kami,<br>
+       ZH Picture
     </p>
-    <div style="height:120px;">
-        <img src="{{ public_path('images/ttd-dwiantosa.png') }}"
-             style="height:140px;">
+    <div style="height:90px;">
+        <img src="{{ public_path('images/ttd-zhpicture.png') }}"
+             style="height:100px;">
     </div>
     <p>
-        <strong><u>Ir. Ar. Dwiantosa Ahmad Fathony, IAI., IPP</u></strong><br>
-        Direktur Utama
+        <strong><u>Achmad Zulkifli Nur Rochim, S.Psi.</u></strong><br>
+        Direktur
     </p>
 
 </div>

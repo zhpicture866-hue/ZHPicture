@@ -17,342 +17,316 @@ use DB;
 class InvoiceBuildController extends Controller
 {
 
-    public function invoiceBuild(Project $project, int $termin)
-    {
-        abort_if($project->project_type != 3, 403);
-        abort_if(!$project->offer, 404);
+public function invoiceBuild(Project $project, int $termin)
+{
+    abort_if(!$project->rab, 404);
 
-        Carbon::setLocale('id');
+    Carbon::setLocale('id');
+    $buildTermin = $project->buildTermins()
+        ->where('termin_no', $termin)
+        ->first();
 
-        $terminMap = [
-            1 => ['start' => 0,  'end' => 30,  'percent' => 30],
-            2 => ['start' => 30, 'end' => 60,  'percent' => 30],
-            3 => ['start' => 60, 'end' => 90,  'percent' => 30],
-            4 => ['start' => 90, 'end' => 100, 'percent' => 10],
-        ];
+    abort_if(
+        !$buildTermin,
+        404,
+        'Termin Build tidak ditemukan.'
+    );
 
-        abort_if(!isset($terminMap[$termin]), 404);
+    $offer = $project->rab;
 
-        $conf = $terminMap[$termin];
-        $offer = $project->offer;
-        $rab = $offer->rab;
+    $grandTotal = (float) $offer->grand_total;
 
-        $result = DB::transaction(function () use ($project, $termin, $conf, $rab, $offer) {
+    $result = DB::transaction(function () use (
+        $project,
+        $termin,
+        $buildTermin,
+        $grandTotal
+    ) {
 
-            $subtotal = $rab->categories
-                ->flatMap(fn($c) => $c->uraians)
-                ->flatMap(fn($u) => $u->items)
-                ->sum(fn($i) => $i->volume * $i->price);
+        $paymentPercentage = (float) $buildTermin->percentage;
+        $newAmount = (float) $buildTermin->amount;
+        $termins = $project->buildTermins()
+            ->orderBy('termin_no')
+            ->get();
 
-            $discount = $offer->discount ?? 0;
+        $progressStart = 0;
 
-            $subtotalAfterDiscount = $subtotal - $discount;
+        foreach ($termins as $item) {
 
-            $taxRate = $offer->tax_rate ?? 0;
-
-            $totalTax = $subtotalAfterDiscount * ($taxRate / 100);
-
-            $shipping = $offer->shipping ?? 0;
-
-            $grandTotal = $subtotalAfterDiscount + $totalTax + $shipping;
-
-            $newAmount = $grandTotal * ($conf['percent'] / 100);
-
-            $invoice = InvoiceBuild::where('project_id', $project->id)
-                ->where('termin', $termin)
-                ->lockForUpdate()
-                ->first();
-
-            if (!$invoice) {
-
-                $invoice = InvoiceBuild::create([
-                    'project_id'          => $project->id,
-                    'invoice_type'        => InvoiceBuild::TYPE_BUILD,
-                    'invoice_number'      => InvoiceBuildNumberGenerator::generate($termin),
-                    'invoice_date'        => now(),
-                    'termin'              => $termin,
-                    'progress_start'      => $conf['start'],
-                    'progress_end'        => $conf['end'],
-                    'payment_percentage'  => $conf['percent'],
-                    'amount'              => $newAmount,
-                    'status'              => 'waiting',
-                ]);
-
-            } else {
-
-                if ($invoice->amount != $newAmount) {
-
-                    $invoice->update([
-                        'amount' => $newAmount,
-                    ]);
-                }
+            if ((int) $item->termin_no === $termin) {
+                break;
             }
 
-            if (!$invoice->downloaded_at) {
+            $progressStart += (float) $item->percentage;
+        }
+
+        $progressEnd = $progressStart + $paymentPercentage;
+
+        $invoice = InvoiceBuild::where('project_id', $project->id)
+            ->where('termin', $termin)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$invoice) {
+
+            $invoice = InvoiceBuild::create([
+                'project_id'         => $project->id,
+                'invoice_type'       => InvoiceBuild::TYPE_WEDDING,
+                // 'invoice_number'     => InvoiceBuildNumberGenerator::generate($termin),
+                'invoice_number' => $this->generateInvoiceNumber(),
+                'invoice_date'       => now(),
+                'termin'             => $termin,
+                'progress_start'     => $progressStart,
+                'progress_end'       => $progressEnd,
+                'payment_percentage' => $paymentPercentage,
+                'amount'             => $newAmount,
+                'status'             => 'waiting',
+            ]);
+
+        } else {
+
+            if (
+                (float) $invoice->amount !== $newAmount ||
+                (float) $invoice->payment_percentage !== $paymentPercentage ||
+                (float) $invoice->progress_start !== $progressStart ||
+                (float) $invoice->progress_end !== $progressEnd
+            ) {
 
                 $invoice->update([
-                    'downloaded_at' => now(),
+                    'amount'             => $newAmount,
+                    'payment_percentage' => $paymentPercentage,
+                    'progress_start'     => $progressStart,
+                    'progress_end'       => $progressEnd,
                 ]);
             }
+        }
 
-            return [
-                'invoice' => $invoice->fresh(),
-                'grandTotal' => $grandTotal,
-            ];
-        });
+        if (!$invoice->downloaded_at) {
 
-        return Pdf::loadView('invoice.build', [
-            'invoice' => $result['invoice'],
-            'project' => $project,
-            'offer'   => $offer,
-            'grandTotal' => $result['grandTotal']
-        ])
-        ->setPaper('A4', 'portrait')
-        ->stream(
-            "Invoice-Build-Termin-{$termin}-{$project->project_name}.pdf"
+            $invoice->update([
+                'downloaded_at' => now(),
+            ]);
+        }
+
+        return [
+            'invoice'    => $invoice->fresh(),
+            'grandTotal' => $grandTotal,
+        ];
+    });
+
+    return Pdf::loadView('invoice.build', [
+        'invoice'    => $result['invoice'],
+        'project'    => $project,
+        'offer'      => $offer,
+        'grandTotal' => $result['grandTotal'],
+    ])
+    ->setPaper('A4', 'portrait')
+    ->stream(
+        "Invoice-Build-Termin-{$termin}-{$project->project_name}.pdf"
+    );
+}
+
+public function approve(Project $project, InvoiceBuild $invoice)
+{
+    // Pastikan invoice memang milik project ini
+    abort_if(
+        $invoice->project_id !== $project->id,
+        404
+    );
+
+    // Authorization
+    if (
+        $project->customer?->user_id !== auth()->id()
+        && auth()->user()->cannot('lihat daftar proyek')
+    ) {
+        abort(403);
+    }
+
+    // Invoice harus sudah pernah dibuka/download
+    if (!$invoice->downloaded_at) {
+        return back()->with(
+            'error',
+            'Invoice belum didownload.'
         );
     }
 
-    public function approve(Project $project, InvoiceBuild $invoice)
-    {
-        abort_if($project->project_type != 3, 403);
-        abort_if($invoice->project_id !== $project->id, 404);
+    // Jangan approve ulang
+    if ($invoice->approved_at) {
+        return back()->with(
+            'info',
+            'Invoice sudah disetujui.'
+        );
+    }
+
+    $currentTermin = (int) $invoice->termin;
+
+    // Pastikan termin sebelumnya sudah approved
+    if ($currentTermin > 1) {
+
+        $previousInvoice = InvoiceBuild::where('project_id', $project->id)
+            ->where('termin', $currentTermin - 1)
+            ->first();
 
         abort_if(
-            $project->customer->user_id !== auth()->id()
-            && auth()->user()->cannot('lihat daftar proyek'),
-            403
+            !$previousInvoice || !$previousInvoice->approved_at,
+            403,
+            'Termin sebelumnya belum disetujui.'
         );
+    }
 
-        if (!$invoice->downloaded_at) {
-            return back()->with('error','Invoice belum didownload.');
-        }
+    DB::transaction(function () use (
+        $project,
+        $invoice,
+        $currentTermin
+    ) {
 
-        if ($invoice->approved_at) {
-            return back()->with('info','Invoice sudah disetujui.');
-        }
+        $invoice->update([
+            'status'         => 'approved',
+            'approved_at'    => now(),
+            'approve_by_name' => auth()->user()->fullname ?? 'Customer',
+            'approved_ip'    => request()->ip(),
+        ]);
 
-        DB::transaction(function () use ($invoice, $project) {
+        $lastTermin = (int) $project->buildTermins()->max('termin_no');
 
-            $invoice->update([
-                'status' => 'approved',
-                'approved_at' => now(),
-                'approve_by_name' => auth()->user()->fullname ?? 'Customer',
-                'approved_ip' => request()->ip(),
-            ]);
+        if ($currentTermin === $lastTermin) {
 
-            $project->load('offer.rab.categories.uraians.items');
+            // Selesaikan level Invoice
+            $invoiceLevel = $project->levels()
+                ->where('level_name', 'Invoice')
+                ->first();
 
-            $subtotalPekerjaan = $project->offer->rab
-                ->categories
-                ->flatMap(fn($c) => $c->uraians)
-                ->flatMap(fn($u) => $u->items)
-                ->sum('total');
-
-            $currentRabItemIds = $project->offer->rab
-                ->categories
-                ->flatMap(fn($c) => $c->uraians)
-                ->flatMap(fn($u) => $u->items)
-                ->pluck('id')
-                ->toArray();
-            BuildProcessItem::where('project_id', $project->id)
-                ->whereNotIn('rab_item_id', $currentRabItemIds)
-                ->whereDoesntHave('weeklyProgresses')
-                ->delete();
-
-            foreach ($project->offer->rab->categories as $cIndex => $category) {
-
-                foreach ($category->uraians as $uIndex => $uraian) {
-
-                    foreach ($uraian->items as $iIndex => $item) {
-
-                        $existing = BuildProcessItem::where([
-                            'project_id' => $project->id,
-                            'rab_item_id' => $item->id,
-                        ])->first();
-
-                        $hasProgress =
-                            $existing &&
-                            $existing->weeklyProgresses()->exists();
-
-                        $bobot = $subtotalPekerjaan > 0
-                            ? ($item->total / $subtotalPekerjaan) * 100
-                            : 0;
-
-                        $buildProcessItem = BuildProcessItem::updateOrCreate(
-
-                            [
-                                'project_id' => $project->id,
-                                'rab_item_id' => $item->id,
-                            ],
-
-                            [
-                                'category_name' => $category->name,
-                                'uraian_name' => $uraian->name,
-
-                                'job_category_id' => $item->job_category_id,
-                                'uraian' => $item->job_name,
-
-                                'price' => $hasProgress
-                                    ? $existing->price
-                                    : $item->price,
-
-                                'volume' => $hasProgress
-                                    ? $existing->volume
-                                    : $item->volume,
-
-                                'total' => $hasProgress
-                                    ? $existing->total
-                                    : ($item->volume * $item->price),
-
-                                'satuan' => $item->satuan,
-
-                                'bobot_percent' => $bobot,
-
-                                'category_order' => $cIndex,
-                                'uraian_order' => $uIndex,
-                                'item_order' => $iIndex,
-                            ]
-                        );
-                        BuildPlans::updateOrCreate(
-
-                            [
-                                'project_id' => $project->id,
-                                'rab_item_id' => $item->id,
-                            ],
-
-                            [
-                                'build_process_item_id' => $buildProcessItem->id,
-
-                                'category_name' => $buildProcessItem->category_name,
-                                'uraian_name' => $buildProcessItem->uraian_name,
-
-                                'job_category_id' => $buildProcessItem->job_category_id,
-                                'item_name' => $buildProcessItem->uraian,
-
-                                'price' => $buildProcessItem->price,
-                                'volume' => $buildProcessItem->volume,
-                                'total' => $buildProcessItem->total,
-
-                                'satuan' => $buildProcessItem->satuan,
-
-                                'bobot_percent' => $buildProcessItem->bobot_percent,
-
-                                'category_order' => $buildProcessItem->category_order,
-                                'uraian_order' => $buildProcessItem->uraian_order,
-                                'item_order' => $buildProcessItem->item_order,
-                            ]
-                        );
-                        $plans = BuildPlans::where('project_id', $project->id)
-                            ->orderBy('id')
-                            ->get();
-
-                        $selisih = round(
-                            100 - $plans->sum('bobot_percent'),
-                            10
-                        );
-
-                        if (abs($selisih) > 0.0000001) {
-
-                            $lastPlan = $plans->last();
-
-                            $lastPlan->update([
-                                'bobot_percent' => $lastPlan->bobot_percent + $selisih
-                            ]);
-                        }
-                    }
-                }
-            }
-
-            $lastTermin = 4;
-
-            if ($invoice->termin == 1) {
-
-                ProjectLevel::where([
-                    'project_id' => $project->id,
-                    'level_order' => 6,
-                ])->update(['is_completed' => true]);
-
-                ProjectLevel::where([
-                    'project_id' => $project->id,
-                    'level_order' => 7,
-                ])->update(['is_started' => true]);
-
-                $project->update([
-                    'active_step' => 7
+            if ($invoiceLevel && !$invoiceLevel->is_completed) {
+                $invoiceLevel->update([
+                    'is_completed' => true,
+                    'completed_at' => now(),
                 ]);
             }
 
-            elseif ($invoice->termin == $lastTermin) {
+            // $nextLevel = $project->levels()
+            //     ->where('level_order', '>', $invoiceLevel?->level_order)
+            //     ->orderBy('level_order')
+            //     ->first();
 
-                ProjectLevel::where([
-                    'project_id' => $project->id,
-                    'level_order' => 7,
-                ])->update(['is_completed' => true]);
+            // if ($nextLevel) {
+            //     $nextLevel->update([
+            //         'is_started' => true,
+            //         'started_at' => $nextLevel->started_at ?? now(),
+            //     ]);
 
-                ProjectLevel::where([
-                    'project_id' => $project->id,
-                    'level_order' => 8,
-                ])->update(['is_started' => true]);
-
-                $project->update([
-                    'active_step' => 8
-                ]);
-            }
-        });
-
-        $event = 'invoice_build_created';
-        $cfg   = config("project_events.$event");
-
-        $payloadExtra = [
-            'termin'          => $invoice->termin,
-            'amount'          => number_format($invoice->amount, 0, ',', '.'),
-            'progress_start'  => $invoice->progress_start,
-            'progress_end'    => $invoice->progress_end,
-        ];
-
-        if (!$cfg) {
-            throw new \Exception("Config project_events.$event not found");
+            //     $project->update([
+            //         'active_step' => $nextLevel->level_order + 1,
+            //     ]);
+            // } 
         }
+    });
 
-        ProjectNotifier::notifyUsers(
-            [$project->createdBy ?? auth()->user()],
-            ProjectNotifier::makePayload($project, [
-                'type'    => $event,
-                'role'    => 'Super-Admin',
-                'title'   => ProjectNotifier::parseMessage($cfg['title'], $payloadExtra),
+    $event = 'invoice_build_created';
+
+    $cfg = config("project_events.$event");
+
+    if (!$cfg) {
+        throw new \Exception(
+            "Config project_events.$event not found"
+        );
+    }
+
+    $payloadExtra = [
+        'termin' => $invoice->termin,
+
+        'amount' => number_format(
+            $invoice->amount,
+            0,
+            ',',
+            '.'
+        ),
+
+        'progress_start' => $invoice->progress_start,
+
+        'progress_end' => $invoice->progress_end,
+    ];
+
+
+    ProjectNotifier::notifyUsers(
+        [
+            $project->createdBy
+                ?? auth()->user()
+        ],
+        ProjectNotifier::makePayload(
+            $project,
+            [
+                'type' => $event,
+
+                'role' => 'Super-Admin',
+
+                'title' => ProjectNotifier::parseMessage(
+                    $cfg['title'],
+                    $payloadExtra
+                ),
+
                 'message' => ProjectNotifier::parseMessage(
                     $cfg['message']['Super-Admin'],
                     $payloadExtra
                 ),
-                'url'     => route('projects.create', ['project_id' => $project->id]),
-            ])
-        );
 
-        if ($project->customer?->user) {
-            ProjectNotifier::notifyUsers(
-                [$project->customer->user],
-                ProjectNotifier::makePayload($project, [
-                    'type'    => $event,
-                    'role'    => 'Customer',
-                    'title'   => ProjectNotifier::parseMessage($cfg['title'], $payloadExtra),
+                'url' => route(
+                    'projects.create',
+                    [
+                        'project_id' => $project->id
+                    ]
+                ),
+            ]
+        )
+    );
+
+
+    if ($project->customer?->user) {
+
+        ProjectNotifier::notifyUsers(
+            [
+                $project->customer->user
+            ],
+            ProjectNotifier::makePayload(
+                $project,
+                [
+                    'type' => $event,
+
+                    'role' => 'Customer',
+
+                    'title' => ProjectNotifier::parseMessage(
+                        $cfg['title'],
+                        $payloadExtra
+                    ),
+
                     'message' => ProjectNotifier::parseMessage(
                         $cfg['message']['customer'],
                         $payloadExtra
                     ),
-                    'url'     => route('projects.create', ['project_id' => $project->id]),
-                ])
-            );
-        }
 
-
-        return redirect()
-            ->route('projects.create', ['project_id' => $project->id])
-            ->with(
-                'success',
-                "Invoice Termin {$invoice->termin} berhasil disetujui."
-            );
+                    'url' => route(
+                        'projects.create',
+                        [
+                            'project_id' => $project->id
+                        ]
+                    ),
+                ]
+            )
+        );
     }
+
+
+    return redirect()
+        ->route(
+            'projects.create',
+            [
+                'project_id' => $project->id
+            ]
+        )
+        ->with(
+            'success',
+            "Invoice Termin {$invoice->termin} berhasil disetujui."
+        );
+}
 
 public static function autoGenerate(Project $project, $progress)
 {
@@ -502,50 +476,25 @@ public function autoJustek(Project $project)
 
     return response()->json(['ok'=>true]);
 }
+    private function generateInvoiceNumber(): string
+{
+    $year = now()->format('Y');
+
+    $lastInvoice = InvoiceBuild::where('invoice_number', 'like', "ZH.I.{$year}.%")
+        ->orderByDesc('invoice_number')
+        ->first();
+
+    if ($lastInvoice) {
+        $lastNumber = (int) substr($lastInvoice->invoice_number, -2);
+        $nextNumber = $lastNumber + 1;
+    } else {
+        $nextNumber = 1;
+    }
+
+    return sprintf(
+        'ZH.I.%s.%02d',
+        $year,
+        $nextNumber
+    );
 }
-            // if (
-            //     $invoice->termin == 1 &&
-            //     BuildProcessItem::where('project_id', $project->id)->doesntExist()
-            // ) {
-
-            //     $project->load('offer.rab.categories.uraians.items');
-
-            //     $rows = [];
-
-            //     foreach ($project->offer->rab->categories as $cIndex => $category) {
-                      
-            //         foreach ($category->uraians as $uIndex => $uraian) {
-
-            //             foreach ($uraian->items as $iIndex => $item) {
-
-            //                 $rows[] = [
-
-            //                     'project_id' => $project->id,
-            //                     'rab_item_id' => $item->id,
-
-            //                     'category_name' => $category->name,
-            //                     'uraian_name' => $uraian->name,
-
-            //                     'job_category_id' => $item->job_category_id,
-            //                     'uraian' => $item->job_name,
-
-            //                     'price' => $item->price,
-            //                     'volume' => $item->volume,
-            //                     'total' => $item->total,
-            //                     'satuan' => $item->satuan,
-
-            //                     'bobot_percent' => 0,
-
-            //                     'category_order' => $cIndex,
-            //                     'uraian_order' => $uIndex,
-            //                     'item_order' => $iIndex,
-
-            //                     'created_at' => now(),
-            //                     'updated_at' => now(),
-            //                 ];
-            //             }
-            //         }
-            //     }
-
-            //     BuildProcessItem::insert($rows);
-            // }
+}

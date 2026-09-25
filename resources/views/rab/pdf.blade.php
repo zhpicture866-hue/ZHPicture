@@ -13,7 +13,7 @@
 
         .content { padding: 20px 50px 0 50px; }
         .meta { line-height: 1.4; }
-        .section-title { font-weight: bold; font-size: 10px; margin: 28px 0 10px 0; }
+        .section-title { font-weight: bold; font-size: 11px; margin: 28px 0 10px 0; }
 
         table.info { width: 100%; border-collapse: collapse; margin-left: 25px; }
         table.info td { border: none; padding: 1px 0; vertical-align: top; }
@@ -21,7 +21,7 @@
         table.info td.sep { width: 12px; }
 
         table.items { width: 100%; border-collapse: collapse; margin-top: 8px; }
-        table.items thead th { background: #000; color: #fff; padding: 5px 6px; font-size: 9px; text-align: center; border: none; }
+        table.items thead th { background: #000; color: #fff; padding: 5px 6px; font-size: 10px; text-align: center; border: none; }
         table.items td { padding: 6px; vertical-align: top; border: none; }
         table.items tr.item-row td { border-bottom: 1px solid #000; }
         table.items tr.empty-row td { border-bottom: 1px solid #000; height: 20px; }
@@ -41,6 +41,29 @@
         table.summary tr.total td.lbl { border-bottom: none; }
 
         .notes { margin-top: 18px; line-height: 1.5; }
+
+        /* ==== Tambahan untuk Lampiran 2 ==== */
+        .page-break { page-break-before: always; }
+
+        table.payment { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        table.payment thead th { background: #000; color: #fff; padding: 6px; font-size: 10px; text-align: center; border: none; }
+        table.payment td { padding: 8px 6px; vertical-align: top; border: none; }
+        table.payment tr.payment-row td { border-bottom: 1px solid #000; }
+        table.payment tr.empty-row td { border-bottom: 1px solid #000; height: 22px; }
+
+        .keterangan { margin-top: 10px; }
+        .keterangan ol { margin: 0; padding-left: 18px; line-height: 1.6; }
+
+        .rekening { margin-top: 16px; }
+        .rekening .bank-block { margin-bottom: 10px; }
+        .rekening .bank-name { font-weight: bold; }
+        .rekening .bank-number { font-weight: bold; font-size: 13px; }
+
+        .closing { margin-top: 18px; line-height: 1.5; }
+
+        .ttd { margin-top: 24px; }
+        .ttd img.signature { height: 70px; margin: 6px 0; display: block; }
+        .ttd .signer-name { font-weight: bold; text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -48,6 +71,37 @@
 @php
     $rp = fn ($n) => 'Rp. ' . number_format((float) $n, 0, ',', '.');
     $diskon = (float) $offer->discount;
+
+    // Fallback data kalau controller belum kirim $terms / $bankAccounts / payments relation
+    $terms = $terms ?? [
+        'Penawaran harga ini <strong>berlaku hingga 7 hari</strong> dari tanggal penawaran.',
+        'Metode pembayaran akan dijelaskan pada bagian <strong>detail pembayaran.</strong>',
+        'Harga belum termasuk pajak (apabila ada) dan Pajak ditanggung oleh pihak klien.',
+        'Booking tanggal setelah proses pembayaran DP / pembayaran pertama.',
+        'Mohon untuk segera konfirmasi kepada kami, Apabila telah melakukan pembayaran.',
+        'Pastikan untuk melakukan pembayaran pada nomor rekening yang telah disebutkan.',
+        'DP dan pembayaran yang telah dibayarkan tidak bisa dikembalikan dengan alasan apapun.',
+        'ZH Picture berhak atas dokumentasi untuk kebutuhan sosial media maupun promosi.',
+        'ZH Picture berusaha semaksimal mungkin untuk menjaga privasi hasil dokumentasi terutama akhwat.',
+        'Proses editing kurang lebih 14 – 28 hari kerja setelah hari H proses syuting selesai.',
+    ];
+
+    $bankAccounts = $bankAccounts ?? [
+        ['bank' => 'Bank Mandiri', 'number' => '141 001 378 428 5', 'holder' => 'Achmad Zulkifli Nur Rochim'],
+        ['bank' => 'Bank BTN', 'number' => '00113 01 50 004049 4', 'holder' => 'Achmad Zulkifli Nur Rochim'],
+    ];
+
+    // Ambil dari relasi payments kalau ada, kalau tidak fallback 1 baris = grand_total
+    $payments = isset($offer->payments) && count($offer->payments)
+        ? $offer->payments
+        : collect([
+            (object) [
+                'label' => 'Pembayaran 1',
+                'nominal' => $offer->grand_total,
+                'waktu' => 'Secepatnya untuk booking tanggal',
+                'ket' => null,
+            ],
+        ]);
 @endphp
 
 <div class="header">
@@ -57,6 +111,7 @@
     <img src="{{ public_path('images/footer-penawaran.png') }}">
 </div>
 
+{{-- ======================= LAMPIRAN 1 ======================= --}}
 <div class="content">
 
     <div class="meta">
@@ -97,7 +152,6 @@
 
                         @if($item->description)
                             @php
-                                // izinkan hanya tag yang aman & dikenali dompdf
                                 $desc = strip_tags($item->description, '<p><br><ul><ol><li><strong><b><em><i><u>');
                             @endphp
                             <div class="desc {{ $item->category_name ? '' : 'desc-titled' }}">
@@ -163,13 +217,80 @@
         </tr>
     </table>
 
-    {{-- @if($offer->notes)
-        <div class="notes">
-            <span class="bold">Catatan:</span><br>
-            {!! nl2br(e($offer->notes)) !!}
-        </div>
-    @endif --}}
+</div>
+
+{{-- ======================= LAMPIRAN 2 ======================= --}}
+<div class="content page-break">
+
+    <div class="meta">
+        No. {{ $offer->offer_number ?? '-' }}<br>
+        {{ $offer->offer_date ? \Carbon\Carbon::parse($offer->offer_date)->translatedFormat('d F Y') : '-' }}<br>
+        Lampiran 2<br>
+        Penawaran Harga
+    </div>
+
+    <div class="section-title">Detail Pembayaran</div>
+    <table class="payment">
+        <thead>
+            <tr>
+                <th style="width:22%">Pembayaran</th>
+                <th style="width:22%">Nominal</th>
+                <th style="width:41%">Waktu</th>
+                <th style="width:15%">Ket</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($payments as $payment)
+                <tr class="payment-row">
+                    <td>{{ $payment->label }}</td>
+                    <td class="text-center">{{ $rp($payment->nominal) }}</td>
+                    <td class="text-center">{{ $payment->waktu }}</td>
+                    <td class="text-center">{{ $payment->ket ?? '' }}</td>
+                </tr>
+            @endforeach
+
+            @for($i = count($payments); $i < 3; $i++)
+                <tr class="empty-row"><td colspan="4">&nbsp;</td></tr>
+            @endfor
+        </tbody>
+    </table>
+
+    <div class="section-title">Keterangan</div>
+    <div class="keterangan">
+        <ol>
+            @foreach($terms as $term)
+                <li>{!! $term !!}</li>
+            @endforeach
+        </ol>
+    </div>
+
+    <div class="rekening">
+        <span class="bold">Pilihan Nomor Rekening :</span>
+        @foreach($bankAccounts as $acc)
+            <div class="bank-block">
+                <div class="bank-name">{{ $acc['bank'] }}</div>
+                <div class="bank-number">{{ $acc['number'] }}</div>
+                <div>a.n. <span class="bold">{{ $acc['holder'] }}</span></div>
+            </div>
+        @endforeach
+    </div>
+
+    <div class="closing">
+        Demikian penawaran harga kami sampaikan, besar harapan kami, Bapak/Ibu berminat dengan harga yang kami
+        tawarkan. Atas perhatian Bapak/Ibu, kami ucapkan terima kasih.
+    </div>
+
+    <div class="ttd">
+        Hormat kami,<br>
+        ZH Picture<br>
+
+        <img class="signature" src="{{ public_path('images/ttd-zhpicture.png') }}">
+
+        <div class="signer-name">{{ $company->director_name ?? 'Achmad Zulkifli Nur Rochim, S.Psi.' }}</div>
+        <div>{{ $company->director_title ?? 'Direktur' }}</div>
+    </div>
 
 </div>
+
 </body>
 </html>
