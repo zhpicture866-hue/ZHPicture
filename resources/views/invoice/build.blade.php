@@ -112,15 +112,15 @@ p {
             </tr>
             <tr>
                 <td>Nama Bank</td>
-                <td>: BCA Cabang Jember</td>
+                <td>: Bank Mandiri</td>
             </tr>
             <tr>
                 <td>No. Rekening</td>
-                <td>: 0241575429</td>
+                <td>: 141 001 378 428 5</td>
             </tr>
             <tr>
                 <td>Atas Nama</td>
-                <td>: Dwiantosa Ahmad Fathony</td>
+                <td>: Achmad Zulkifli Nur Rochim</td>
             </tr>
             <tr>
                 <td colspan="2">
