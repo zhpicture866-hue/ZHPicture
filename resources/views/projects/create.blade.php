@@ -82,27 +82,11 @@
                             'edit'    => 'projects.edit.rab-process',
                             'detail'  => 'projects.details.rab-process',
                             'hasData' => (bool) ($project->rab && $project->rab->items()->exists()),
-                            'action'  => '<button type="submit" form="rabForm" class="btn btn-dark" title="Simpan RAB"><i class="ti ti-device-floppy me-1"></i></button>',
-                        ],
-                        'Penawaran Harga' => [
-                            'create'  => 'projects.steps.rab-process',
-                            'edit'    => 'projects.edit.rab-process',
-                            'detail'  => 'projects.details.rab-process',
-                            'hasData' => (bool) ($project->rab && $project->rab->items()->exists()),
                             'formId'  => 'rab-edit-form',
                             'action'  => '<button type="submit" form="rabForm" class="btn btn-dark" title="Simpan RAB">
                                             <i class="ti ti-device-floppy me-1"></i>
                                         </button>',
                             'updateText' => 'Simpan Perubahan RAB',
-                        ],
-                        'Setting Termin' => [
-                            'create'  => 'projects.steps.build-termin',
-                            'edit'    => 'projects.edit.build-termin-form',
-                            'detail'  => 'projects.details.build-termins',
-                            // FIX: tadinya hardcode `false` -> gak akan pernah nampilin ringkasan+edit
-                            // walau termin udah pernah diisi. Sekarang dihitung beneran dari data.
-                            'hasData' => (bool) $project->buildTermins()->exists(),
-                            'action'  => null,
                         ],
                         'Setting Termin' => [
                             'create'  => 'projects.steps.build-termin',
@@ -118,6 +102,8 @@
 
                 @foreach($project->levels->sortBy('level_order') as $level)
                     @continue($activeStep < $level->level_order + 1)
+                    {{-- Step Invoice dihapus: tombol invoice sekarang ada di tabel step Setting Termin --}}
+                    @continue($level->level_name === 'Invoice')
 
                     @php
                         $stepTitle = ($level->level_order + 1) . '. ' . $level->level_name;
@@ -126,93 +112,6 @@
 
                     <div id="step-{{ $slug }}" class="step-section">
 
-                        @if($level->level_name === 'Invoice')
-
-                            {{-- ============== INVOICE — inline, gak pakai @include ============== --}}
-                            <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body">
-                                    @php
-                                        $termins = $project->buildTermins->sortBy('termin_no')->values();
-
-                                        $firstTermin  = $termins->first();
-                                        $firstInvoice = $firstTermin
-                                            ? $project->invoices->where('termin', $firstTermin->termin_no)->first()
-                                            : null;
-                                    @endphp
-                                @if($termins->isEmpty())
-
-                                    <div class="alert alert-warning mb-0">
-                                        Setting Termin belum diisi.
-                                        Isi dulu di step "Setting Termin".
-                                    </div>
-
-                                @else
-
-                                    {{-- Sudah ada rencana pembayaran -> kartu per termin, tombol download langsung di sini --}}
-                                    <div class="row">
-                                        @foreach($termins as $index => $buildTermin)
-                                            @php
-                                                $t = $buildTermin->termin_no;
-                                                $inv = $project->invoicebuilds->where('termin', $t)->first();
-
-                                                $prevInv = $index > 0
-                                                    ? $project->invoicebuilds->where('termin', $termins[$index - 1]->termin_no)->first()
-                                                    : null;
-                                                $canDownload = $index == 0 || ($prevInv && $prevInv->downloaded_at);
-                                            @endphp
-
-                                            <div class="col-md-3 mb-3">
-                                                <div class="card border-0 shadow-sm h-100">
-                                                    <div class="card-body text-center">
-                                                        <h5>Termin {{ $t }}</h5>
-
-                                                        @if($inv)
-                                                            <span class="badge
-                                                                @if($inv->status == 'approved') bg-success @else bg-warning @endif
-                                                                text-white mb-2">
-                                                                {{ strtoupper($inv->status) }}
-                                                            </span>
-                                                            <br>
-                                                        @endif
-
-                                                        @if($canDownload)
-                                                            <a href="{{ route('projects.invoice.build', ['project' => $project->id, 'termin' => $t]) }}"
-                                                            class="btn btn-dark btn-sm mb-2" target="_blank">
-                                                                <i class="ti ti-download"></i>
-                                                                {{ $inv && $inv->downloaded_at ? 'Lihat Invoice' : 'Download Invoice Termin' }}
-                                                            </a>
-
-                                                            @if(
-                                                                $inv && $inv->downloaded_at &&
-                                                                !$inv->approved_at &&
-                                                                ($index == 0 || optional($prevInv)->approved_at)
-                                                            )
-                                                                <br>
-                                                                <form action="{{ route('projects.invoice.build.approve', [$project->id, $inv->id]) }}"
-                                                                    method="POST"
-                                                                    class="approve-form"
-                                                                    data-title="Approve Termin {{ $t }}?"
-                                                                    data-text="Invoice termin {{ $t }} akan disetujui.">
-                                                                    @csrf
-                                                                    <button class="btn btn-success btn-sm">
-                                                                        Approve Termin {{ $t }}
-                                                                    </button>
-                                                                </form>
-                                                            @endif
-                                                        @else
-                                                            <span class="text-muted">Belum tersedia</span>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-
-                                @endif
-
-                            </x-collapse-card>
-                            {{-- ============== /INVOICE ============== --}}
-
-                        @else
 
                             @php $config = $stepViews[$level->level_name] ?? null; @endphp
 
@@ -228,13 +127,19 @@
                                 <x-collapse-card :title="$stepTitle" target="{{ $slug }}-body">
                                     <x-slot:actions>
                                         @can('ubah data proyek')
-                                        <button type="button"
-                                                class="btn btn-sm btn-dark btn-toggle-view-edit"
-                                                data-view="{{ $slug }}-view"
-                                                data-edit="{{ $slug }}-edit"
-                                                title="Edit Data">
-                                            <i class="ti ti-edit"></i>
-                                        </button>
+                                            @php
+                                                // Termin dikunci kalau sudah ada invoice yang di-approve.
+                                                $editLocked = $level->level_name === 'Setting Termin'
+                                                    && $project->hasApprovedInvoice();
+                                            @endphp
+                                            <button type="button"
+                                                    class="btn btn-sm btn-dark btn-toggle-view-edit"
+                                                    data-view="{{ $slug }}-view"
+                                                    data-edit="{{ $slug }}-edit"
+                                                    title="{{ $editLocked ? 'Termin tidak dapat diubah karena invoice sudah di-approve' : 'Edit Data' }}"
+                                                    @if($editLocked) disabled @endif>
+                                                <i class="ti ti-edit"></i>
+                                            </button>
                                         @endcan
                                     </x-slot:actions>
                                     <div id="{{ $slug }}-view">
@@ -280,7 +185,6 @@
                                 </x-collapse-card>
                             @endif
 
-                        @endif
                     </div>
                 @endforeach
             @endif
@@ -641,95 +545,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
-// {{-- <script>
-// document.addEventListener("DOMContentLoaded", () => {
-
-//     document.querySelectorAll(".btn-toggle-view-edit").forEach(btn => {
-//         btn.addEventListener("click", () => {
-//             const view = document.getElementById(btn.dataset.view);
-//             const edit = document.getElementById(btn.dataset.edit);
-//             if (!view || !edit) return;
-//             view.style.display = "none";
-//             edit.style.display = "block";
-//         });
-//     });
-
-//     // Generic: batal, balik ke mode ringkas
-//     document.querySelectorAll(".btn-cancel-view-edit").forEach(btn => {
-//         btn.addEventListener("click", () => {
-//             const view = document.getElementById(btn.dataset.view);
-//             const edit = document.getElementById(btn.dataset.edit);
-//             if (!view || !edit) return;
-//             edit.style.display = "none";
-//             view.style.display = "block";
-//         });
-//     });
-
-// });
-
-// let rabEditLoaded = false;
-
-// document.addEventListener("DOMContentLoaded", () => {
-
-//     const rabId = @json($project->rab?->id);
-
-//     if (!rabId) return;
-
-//     const rabEdit = document.getElementById("penawaran-harga-edit");
-
-//     if (!rabEdit) return;
-
-//     document
-//         .querySelector('[data-edit="penawaran-harga-edit"]')
-//         ?.addEventListener("click", async function () {
-
-//             if (rabEditLoaded) {
-
-//                 setTimeout(() => {
-//                     initRabEdit();
-//                 }, 100);
-
-//                 return;
-//             }
-
-//             try {
-
-//                 const response = await fetch(
-//                     `/rab/${rabId}/structure`
-//                 );
-
-//                 if (!response.ok) {
-//                     throw new Error(
-//                         `HTTP ${response.status}`
-//                     );
-//                 }
-
-//                 const data = await response.json();
-
-//                 loadExistingRab(data);
-
-//                 setTimeout(() => {
-//                     initRabEdit();
-//                 }, 100);
-
-//                 rabEditLoaded = true;
-
-//             } catch (error) {
-
-//                 console.error(error);
-
-//                 Swal.fire({
-//                     icon: "error",
-//                     title: "Gagal Memuat RAB",
-//                     text: "Data RAB gagal dimuat."
-//                 });
-
-//             }
-
-//         });
-
-// });
-// </script> --}}
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {

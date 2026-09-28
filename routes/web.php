@@ -647,16 +647,15 @@ Route::prefix('projects/{project}')
     ->middleware(['auth'])
     ->group(function () {
 
-        // Download invoice build per termin
-        Route::get(
-            '/invoice/build/termin/{termin}',
-            [InvoiceBuildController::class, 'invoiceBuild']
-        )->name('projects.invoice.build');
+    Route::get(
+        '/invoice/build/termin/{termin}',
+        [InvoiceBuildController::class, 'invoiceBuild']
+    )->name('projects.invoice.build');
 
-        Route::get(
-'/invoice-build-justek',
-[InvoiceBuildController::class,'invoiceJustek']
-)->name('projects.invoice.build.justek');
+    Route::post(
+        '/invoice/{invoicebuild}/bukti-pembayaran',
+        [InvoiceBuildController::class, 'uploadBuktiPembayaran']
+    )->name('projects.invoice.build.bukti-pembayaran');
         // Approve invoice build
         Route::post('/invoice-build-justek-auto',
     [InvoiceBuildController::class,'autoJustek']
@@ -666,6 +665,7 @@ Route::prefix('projects/{project}')
             [InvoiceBuildController::class, 'approve']
         )->name('projects.invoice.build.approve');
     });
+
 Route::post(
     '/projects/{project}/sync-build',
     [ProjectController::class, 'syncBuildProcess']

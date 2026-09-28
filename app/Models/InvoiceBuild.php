@@ -45,7 +45,9 @@ class InvoiceBuild extends Model
         'payment_percentage',
         'paid_at',
         'note',
-        'nominal'
+        'nominal',
+        'bukti_pembayaran',
+        'bukti_pembayaran_uploaded_at'
     ];
 
         public function project()

@@ -366,20 +366,56 @@ private function generateOfferNumber(): string
         $number
     );
 }
+
 public function exportPdf(Project $project)
 {
-    // sesuaikan nama relasi di model Project
     $offer = $project->rab()
-        ->with(['items' => fn ($q) => $q->orderBy('order_no')->orderBy('id')])
+        ->with([
+            'items' => fn ($q) => $q
+                ->orderBy('order_no')
+                ->orderBy('id')
+        ])
         ->latest('id')
         ->first();
 
-    if (!$offer) abort(404);
+    if (!$offer) {
+        abort(404);
+    }
 
-    $pdf = Pdf::loadView('rab.pdf', compact('offer', 'project'))
-        ->setPaper('A4', 'portrait');
+    $payments = $project->buildTermins()
+        ->orderBy('termin_no')
+        ->get();
 
-    return $pdf->stream('PENAWARAN HARGA-' . $project->project_name . '.pdf');
+    $pdf = Pdf::loadView('rab.pdf', compact(
+        'offer',
+        'project',
+        'payments'
+    ))->setPaper('A4', 'portrait');
+
+    // Nama customer
+    $customerName = $project->customer?->user?->fullname ?? 'CUSTOMER';
+
+    // Kota proyek
+    $cityName = $project->project_location ?? 'KOTA';
+
+    // Bersihkan karakter yang tidak boleh digunakan pada nama file
+    $clean = function ($value) {
+        return trim(
+            preg_replace('/[\\\\\/:*?"<>|]+/', '-', $value)
+        );
+    };
+
+    $filename =
+        $clean($offer->offer_number)
+        . ' '
+        . $clean($project->project_name)
+        . ' - '
+        . $clean($customerName)
+        . ' - '
+        . $clean($cityName)
+        . '.pdf';
+
+    return $pdf->stream($filename);
 }
 public function structure($id)
 {

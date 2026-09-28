@@ -241,10 +241,12 @@ protected $casts = [
     'end_date'   => 'datetime',
 ];
 
-public function getFinalRouteAttribute()
+public function hasApprovedInvoice(): bool
 {
-    return $this->project_type == 3
-        ? route('projects.finals-build.store', $this->id)
-        : route('projects.finals.store', $this->id);
+    return $this->invoicebuilds()
+        ->where(fn ($q) => $q
+            ->whereNotNull('approved_at')
+            ->orWhereIn('status', [InvoiceBuild::STATUS_APPROVED, InvoiceBuild::STATUS_PAID]))
+        ->exists();
 }
 }

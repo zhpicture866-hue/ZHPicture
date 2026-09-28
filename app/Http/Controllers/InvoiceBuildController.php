@@ -12,6 +12,7 @@ use App\Services\ProjectNotifier;
 use App\Services\InvoiceBuildNumberGenerator;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use DB;
 
 class InvoiceBuildController extends Controller
@@ -128,7 +129,10 @@ public function invoiceBuild(Project $project, int $termin)
 
 public function approve(Project $project, InvoiceBuild $invoice)
 {
-    // Pastikan invoice memang milik project ini
+    abort_if(
+        ! auth()->user()->hasAnyRole(['Super-Admin', 'Employee']),
+        403
+    );
     abort_if(
         $invoice->project_id !== $project->id,
         404
@@ -496,5 +500,38 @@ public function autoJustek(Project $project)
         $year,
         $nextNumber
     );
+}
+
+public function uploadBuktiPembayaran(Request $request, Project $project, InvoiceBuild $invoicebuild)
+{
+    abort_if(
+        auth()->user()->cannot('lihat data proyek'),
+        403
+    );
+
+    abort_if($invoicebuild->project_id !== $project->id, 404);
+
+    // Upload hanya boleh setelah invoice di-download.
+    abort_if(! $invoicebuild->downloaded_at, 422, 'Invoice belum di-download.');
+
+    $request->validate([
+        'bukti_pembayaran' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+    ]);
+
+    if ($invoicebuild->bukti_pembayaran) {
+        Storage::disk('public')->delete($invoicebuild->bukti_pembayaran);
+    }
+
+    $path = $request->file('bukti_pembayaran')->store(
+        'invoice-build/bukti-pembayaran',
+        'public'
+    );
+
+    $invoicebuild->update([
+        'bukti_pembayaran' => $path,
+        'bukti_pembayaran_uploaded_at' => now(),
+    ]);
+
+    return back()->with('success', "Bukti pembayaran termin {$invoicebuild->termin} berhasil diunggah.");
 }
 }

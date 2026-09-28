@@ -1,3 +1,7 @@
+@php
+    $termins = $project->buildTermins->sortBy('termin_no')->values();
+@endphp
+
 <div class="mb-4">
 
     <div class="row">
@@ -21,7 +25,7 @@
             </label>
 
             <div class="fw-semibold">
-                {{ $project->buildTermins->count() }} Termin
+                {{ $termins->count() }} Termin
             </div>
 
         </div>
@@ -42,19 +46,27 @@
                     Termin
                 </th>
 
-                <th width="150" class="text-end">
-                    Persentase
+                <th width="80" class="text-center">
+                    %
                 </th>
 
-                <th width="220" class="text-end">
+                <th width="150" class="text-center">
                     Nominal
                 </th>
 
                 <th>
                     Keterangan
                 </th>
+
                 <th>
                     Tanggal Penagihan
+                </th>
+
+                <th class="text-center">
+                    Invoice
+                </th>
+                <th class="text-center">
+                    Bukti Pembayaran
                 </th>
             </tr>
 
@@ -62,7 +74,7 @@
 
         <tbody>
 
-            @foreach($project->buildTermins->sortBy('termin_no') as $termin)
+            @foreach($termins as $index => $termin)
 
                 <tr>
 
@@ -70,19 +82,35 @@
                         {{ $termin->termin_no }}
                     </td>
 
-                    <td class="text-end">
+                    <td class="text-center">
                         {{ rtrim(rtrim(number_format($termin->percentage, 2, ',', '.'), '0'), ',') }}%
                     </td>
 
-                    <td class="text-end">
+                    <td class="text-center">
                         Rp {{ number_format($termin->amount, 0, ',', '.') }}
                     </td>
 
                     <td>
                         {{ $termin->description ?: '-' }}
                     </td>
+
                     <td>
                         {{ $termin->billing_date->translatedFormat('d F Y') }}
+                    </td>
+
+                    <td class="text-center">
+                        @include('projects.components.termin-invoice-actions', [
+                            'project' => $project,
+                            'termins' => $termins,
+                            'termin'  => $termin,
+                            'index'   => $index,
+                        ])
+                    </td>
+                    <td class="text-center">
+                        @include('projects.components.termin-bukti-pembayaran', [
+                            'project' => $project,
+                            'termin'  => $termin,
+                        ])
                     </td>
 
                 </tr>
@@ -105,7 +133,7 @@
                         rtrim(
                             rtrim(
                                 number_format(
-                                    $project->buildTermins->sum('percentage'),
+                                    $termins->sum('percentage'),
                                     2,
                                     ',',
                                     '.'
@@ -121,7 +149,7 @@
                 <th class="text-end">
 
                     Rp {{ number_format(
-                        $project->buildTermins->sum('amount'),
+                        $termins->sum('amount'),
                         0,
                         ',',
                         '.'
@@ -129,7 +157,7 @@
 
                 </th>
 
-                <th></th>
+                <th colspan="3"></th>
 
             </tr>
 

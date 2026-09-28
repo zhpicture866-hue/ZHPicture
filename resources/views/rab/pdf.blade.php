@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Penawaran Harga {{ $project->project_name }}</title>
+    <title>{{ $offer->offer_number }} {{ $project->project_name }} {{ $project->customer?->user?->fullname }} {{ $project->project_location }}</title>
     <style>
         @page { margin: 150px 0 90px 0; }
         body { font-family: DejaVu Sans, sans-serif; font-size: 9px; color: #000; margin: 0; }
@@ -92,16 +92,9 @@
     ];
 
     // Ambil dari relasi payments kalau ada, kalau tidak fallback 1 baris = grand_total
-    $payments = isset($offer->payments) && count($offer->payments)
-        ? $offer->payments
-        : collect([
-            (object) [
-                'label' => 'Pembayaran 1',
-                'nominal' => $offer->grand_total,
-                'waktu' => 'Secepatnya untuk booking tanggal',
-                'ket' => null,
-            ],
-        ]);
+    $payments = $payments ?? $project->buildTermins()
+        ->orderBy('termin_no')
+        ->get();
 @endphp
 
 <div class="header">
@@ -222,8 +215,55 @@
         Lampiran 2<br>
         Penawaran Harga
     </div>
-
     <div class="section-title">Detail Pembayaran</div>
+
+    <table class="payment">
+        <thead>
+            <tr>
+                {{-- <th style="width:12%">Termin</th> --}}
+                <th style="width:28%">Pembayaran</th>
+                <th style="width:20%">Nominal</th>
+                <th style="width:25%">Waktu</th>
+                <th style="width:15%">Ket</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @forelse($payments as $payment)
+                <tr class="payment-row">
+                    {{-- <td class="text-center">
+                        Termin {{ $payment->termin_no }}
+                    </td> --}}
+
+                    <td>
+                        {{ $payment->description ?? '-' }}
+                    </td>
+
+                    <td class="text-center">
+                        {{ $rp($payment->amount) }}
+                    </td>
+
+                    <td class="text-center">
+                        {{ $payment->billing_date
+                            ? \Carbon\Carbon::parse($payment->billing_date)->translatedFormat('d F Y')
+                            : '-'
+                        }}
+                    </td>
+
+                    <td class="text-center">
+                        {{ $payment->percentage }}%
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="5" class="text-center">
+                        Belum ada pengaturan termin pembayaran.
+                    </td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+    {{-- <div class="section-title">Detail Pembayaran</div>
     <table class="payment">
         <thead>
             <tr>
@@ -247,7 +287,7 @@
                 <tr class="empty-row"><td colspan="4">&nbsp;</td></tr>
             @endfor
         </tbody>
-    </table>
+    </table> --}}
 
     <div class="section-title">Keterangan</div>
     <div class="keterangan">

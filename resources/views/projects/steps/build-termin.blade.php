@@ -18,6 +18,7 @@
         ];
     }
 @endphp
+@can('lihat daftar proyek')
 <form
     action="{{ route('projects.build-termin.store', $project->id) }}"
     method="POST"
@@ -104,10 +105,7 @@
 
                     {{-- NOMOR --}}
                     <div class="col-md-1">
-                        <label class="form-label text-muted small">
-                            Termin
-                        </label>
-
+                        <label class="form-label text-muted small">Termin</label>
                         <div class="termin-number">
                             <span class="termin-no">1</span>
                         </div>
@@ -115,89 +113,62 @@
 
                     {{-- PERSENTASE --}}
                     <div class="col-md-2">
-                        <label class="form-label small fw-semibold">
-                            Persentase
-                        </label>
-
+                        <label class="form-label small fw-semibold">Persentase</label>
                         <div class="input-group">
-                            <input
-                                type="number"
-                                name="percentage[]"
-                                class="form-control termin-percentage"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                placeholder="30"
-                                required
-                            >
-
+                            <input type="number" name="percentage[]" class="form-control termin-percentage"
+                                min="0" max="100" step="0.01" placeholder="30" required>
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
 
                     {{-- NOMINAL --}}
                     <div class="col-md-3">
-                        <label class="form-label small fw-semibold">
-                            Nominal Pembayaran
-                        </label>
-
-                        {{-- Input tampilan (berformat Rp), tanpa name --}}
-                        <input
-                            type="text"
-                            class="form-control termin-amount fw-bold"
-                            placeholder="Rp 0"
-                            inputmode="numeric"
-                            autocomplete="off"
-                        >
-
-                        {{-- Nilai angka murni yang dikirim ke server --}}
-                        <input
-                            type="hidden"
-                            name="amount[]"
-                            class="termin-amount-value"
-                            value=""
-                        >
+                        <label class="form-label small fw-semibold">Nominal Pembayaran</label>
+                        <input type="text" class="form-control termin-amount fw-bold" placeholder="Rp 0"
+                            inputmode="numeric" autocomplete="off">
+                        <input type="hidden" name="amount[]" class="termin-amount-value" value="">
                     </div>
 
                     {{-- KETERANGAN --}}
                     <div class="col-md-3">
-                        <label class="form-label small fw-semibold">
-                            Keterangan
-                        </label>
-
-                        <input
-                            type="text"
-                            name="termin_description[]"
-                            class="form-control termin-description"
-                            placeholder="Contoh: DP / Tahap 1 / Pelunasan"
-                        >
+                        <label class="form-label small fw-semibold">Keterangan</label>
+                        <input type="text" name="termin_description[]" class="form-control termin-description"
+                            placeholder="Contoh: DP / Tahap 1 / Pelunasan">
                     </div>
 
                     {{-- TANGGAL PENAGIHAN --}}
                     <div class="col-md-2">
-                        <label class="form-label small fw-semibold">
-                            Tanggal Penagihan
-                        </label>
-
-                        <input
-                            type="date"
-                            name="billing_date[]"
-                            class="form-control termin-billing-date"
-                        >
+                        <label class="form-label small fw-semibold">Tanggal Penagihan</label>
+                        <input type="date" name="billing_date[]" class="form-control termin-billing-date">
                     </div>
 
                     {{-- HAPUS --}}
                     <div class="col-md-1">
-                        <button
-                            type="button"
-                            class="btn btn-dark btn-icon btn-remove-termin"
-                            title="Hapus Termin"
-                        >
+                        <button type="button" class="btn btn-dark btn-icon btn-remove-termin" title="Hapus Termin">
                             <i class="ti ti-trash"></i>
                         </button>
                     </div>
 
                 </div>
+
+                {{-- BARIS BARU: BUKTI PEMBAYARAN --}}
+                {{-- <div class="row g-3 align-items-end mt-1">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">
+                            Bukti Pembayaran
+                        </label>
+                        <input
+                            type="file"
+                            name="bukti_pembayaran[]"
+                            class="form-control termin-bukti-pembayaran"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                        >
+                        <div class="form-hint mt-1 small text-muted">
+                            Format: PDF, JPG, PNG. Maks. 5MB.
+                        </div>
+                    </div>
+                </div> --}}
+
             </div>
         </div>
     </template>
@@ -274,51 +245,6 @@
         </div>
     </div>
 
-    {{-- MASA PEMELIHARAAN --}}
-    <div class="d-flex align-items-center justify-content-between mb-3 mt-4">
-        <div>
-            <h3 class="mb-1 fw-bold">
-                Masa Pemeliharaan
-            </h3>
-
-            <div class="text-muted">
-                Masa pemeliharaan akan ditampilkan pada form kontrak.
-            </div>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-4">
-            <div class="row align-items-end">
-                <div class="col-md-6">
-
-                    <label class="form-label fw-semibold">
-                        Lama Masa Pemeliharaan
-                    </label>
-
-                    <div class="input-group">
-                        <input
-                            type="number"
-                            name="masa_pemeliharaan"
-                            class="form-control"
-                            min="0"
-                            step="1"
-                            value="{{ old('masa_pemeliharaan') }}"
-                            required
-                        >
-
-                        <span class="input-group-text">Hari</span>
-                    </div>
-
-                    <div class="form-hint mt-2">
-                        Contoh: 90 hari, 120 hari, atau 180 hari.
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="d-flex justify-content-end mt-4">
         <button
             type="submit"
@@ -331,7 +257,7 @@
     </div>
 
 </form>
-
+@endcan
 @push('js')
 <script>
 document.addEventListener('DOMContentLoaded', function () {

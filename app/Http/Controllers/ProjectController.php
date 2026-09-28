@@ -195,7 +195,8 @@ class ProjectController extends Controller
             'projectType',
             'levels',
             'rab.items', // header penawaran + itemnya
-            'invoices',
+            'buildTermins',
+            'invoicebuilds',
         ])->findOrFail($projectId);
     }
 
