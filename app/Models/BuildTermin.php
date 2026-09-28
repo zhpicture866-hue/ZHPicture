@@ -20,11 +20,13 @@ class BuildTermin extends Model
         'percentage',
         'amount',
         'description',
+        'billing_date',
     ];
 
     protected $casts = [
         'percentage' => 'decimal:2',
         'amount' => 'decimal:2',
+        'billing_date' => 'date',
     ];
 
     public function project(): BelongsTo

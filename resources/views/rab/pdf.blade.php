@@ -127,6 +127,8 @@
         <tr><td class="label">Client</td><td class="sep">:</td><td>{{ $offer->contact_name }}</td></tr>
         <tr><td class="label">Address</td><td class="sep">:</td><td>{{ $project->customer->user->address ?? '-' }}</td></tr>
         <tr><td class="label">Phone</td><td class="sep">:</td><td>{{ $project->customer->user->phone ?? '-' }}</td></tr>
+        <tr><td class="label">Event Date</td><td class="sep">:</td><td>{{ $project->start_date->translatedFormat('d F Y') }}</td></tr>
+        <tr><td class="label">Location</td><td class="sep">:</td><td>{{ $project->project_location ?? '-' }}</td></tr>
     </table>
 
     <div class="section-title">Detail Penawaran</div>
@@ -170,14 +172,6 @@
             @endfor
         </tbody>
     </table>
-    <div class="desc-line" style="margin-top:6px">
-        @if($project->start_date)
-            Tanggal Event : {{ $project->start_date->translatedFormat('d F Y') }}<br>
-        @endif
-        @if($project->project_location)
-            Lokasi Event : {{ $project->project_location }}
-        @endif
-    </div>
     @php
         $rounded = floor((float) $offer->grand_total / 100000) * 100000;
     @endphp

@@ -1,28 +1,54 @@
+@php
+    $offerTotal = (float) ($project->rab?->grand_total ?? 0);
+ 
+    // Data lama (setelah validasi gagal) supaya baris termin tidak hilang.
+    $oldPercentages  = (array) old('percentage', ['']);
+    $oldAmounts      = (array) old('amount', []);
+    $oldDescriptions = (array) old('termin_description', []);
+    $oldBillingDates = (array) old('billing_date', []);
+ 
+    $initialRows = [];
+ 
+    foreach ($oldPercentages as $i => $percentage) {
+        $initialRows[] = [
+            'percentage'   => $percentage,
+            'amount'       => $oldAmounts[$i] ?? '',
+            'description'  => $oldDescriptions[$i] ?? '',
+            'billing_date' => $oldBillingDates[$i] ?? '',
+        ];
+    }
+@endphp
 <form
     action="{{ route('projects.build-termin.store', $project->id) }}"
     method="POST"
     id="build-termin-form"
+    enctype="multipart/form-data"
 >
     @csrf
-                            @if ($errors->any())
-                                        <div class="alert alert-danger">
-                                            <ul class="mb-0">
-                                                @foreach ($errors->all() as $error)
-                                                    <li>{{ $error }}</li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
-                                    @endif
-    @php
-        $offerTotal = (float) ($project->rab?->grand_total ?? 0);
-    @endphp
+
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    @if ($offerTotal <= 0)
+        <div class="alert alert-warning">
+            Total penawaran harga belum tersedia. Lengkapi RAB terlebih dahulu
+            sebelum mengatur termin.
+        </div>
+    @endif
 
     <div class="card border-0 bg-light mb-4">
         <div class="card-body p-4">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <div class="text-muted small mb-1">
-                        TOTAL PENAWARAN BUILD
+                        TOTAL PENAWARAN HARGA
                     </div>
 
                     <div class="fs-2 fw-bold text-dark">
@@ -67,12 +93,13 @@
             <i class="ti ti-plus me-1"></i>
         </button>
     </div>
-    <div id="termin-container">
 
+    {{-- Baris termin dirender oleh JavaScript dari template di bawah --}}
+    <div id="termin-container"></div>
+
+    <template id="termin-row-template">
         <div class="card border-0 shadow-sm mb-3 termin-card termin-row">
-
             <div class="card-body p-3">
-
                 <div class="row g-3 align-items-end">
 
                     {{-- NOMOR --}}
@@ -104,9 +131,7 @@
                                 required
                             >
 
-                            <span class="input-group-text">
-                                %
-                            </span>
+                            <span class="input-group-text">%</span>
                         </div>
                     </div>
 
@@ -116,16 +141,26 @@
                             Nominal Pembayaran
                         </label>
 
+                        {{-- Input tampilan (berformat Rp), tanpa name --}}
                         <input
                             type="text"
                             class="form-control termin-amount fw-bold"
-                            value="Rp 0"
-                            readonly
+                            placeholder="Rp 0"
+                            inputmode="numeric"
+                            autocomplete="off"
+                        >
+
+                        {{-- Nilai angka murni yang dikirim ke server --}}
+                        <input
+                            type="hidden"
+                            name="amount[]"
+                            class="termin-amount-value"
+                            value=""
                         >
                     </div>
 
                     {{-- KETERANGAN --}}
-                    <div class="col-md-5">
+                    <div class="col-md-3">
                         <label class="form-label small fw-semibold">
                             Keterangan
                         </label>
@@ -133,12 +168,25 @@
                         <input
                             type="text"
                             name="termin_description[]"
-                            class="form-control"
-                            placeholder="Contoh: DP / Pembayaran Tahap 1 / Pelunasan"
+                            class="form-control termin-description"
+                            placeholder="Contoh: DP / Tahap 1 / Pelunasan"
                         >
                     </div>
 
-                    {{-- DELETE --}}
+                    {{-- TANGGAL PENAGIHAN --}}
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">
+                            Tanggal Penagihan
+                        </label>
+
+                        <input
+                            type="date"
+                            name="billing_date[]"
+                            class="form-control termin-billing-date"
+                        >
+                    </div>
+
+                    {{-- HAPUS --}}
                     <div class="col-md-1">
                         <button
                             type="button"
@@ -150,22 +198,18 @@
                     </div>
 
                 </div>
-
             </div>
-
         </div>
+    </template>
 
-    </div>
-
+    {{-- RINGKASAN --}}
     <div class="card border-0 shadow-sm mt-4">
-
         <div class="card-body p-4">
 
             <div class="row g-4">
 
                 <div class="col-md-6">
                     <div class="summary-item">
-
                         <div class="summary-icon">
                             <i class="ti ti-percentage"></i>
                         </div>
@@ -182,13 +226,11 @@
                                 0%
                             </div>
                         </div>
-
                     </div>
                 </div>
 
                 <div class="col-md-6">
                     <div class="summary-item">
-
                         <div class="summary-icon">
                             <i class="ti ti-cash"></i>
                         </div>
@@ -205,11 +247,11 @@
                                 Rp 0
                             </div>
                         </div>
-
                     </div>
                 </div>
 
             </div>
+
             <div
                 id="termin-warning"
                 class="alert alert-warning mt-4 mb-0 d-none"
@@ -230,10 +272,54 @@
             </div>
 
         </div>
-
     </div>
-    <div class="d-flex justify-content-end mt-4">
 
+    {{-- MASA PEMELIHARAAN --}}
+    <div class="d-flex align-items-center justify-content-between mb-3 mt-4">
+        <div>
+            <h3 class="mb-1 fw-bold">
+                Masa Pemeliharaan
+            </h3>
+
+            <div class="text-muted">
+                Masa pemeliharaan akan ditampilkan pada form kontrak.
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <div class="row align-items-end">
+                <div class="col-md-6">
+
+                    <label class="form-label fw-semibold">
+                        Lama Masa Pemeliharaan
+                    </label>
+
+                    <div class="input-group">
+                        <input
+                            type="number"
+                            name="masa_pemeliharaan"
+                            class="form-control"
+                            min="0"
+                            step="1"
+                            value="{{ old('masa_pemeliharaan') }}"
+                            required
+                        >
+
+                        <span class="input-group-text">Hari</span>
+                    </div>
+
+                    <div class="form-hint mt-2">
+                        Contoh: 90 hari, 120 hari, atau 180 hari.
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-4">
         <button
             type="submit"
             class="btn btn-dark px-4"
@@ -242,7 +328,6 @@
             <i class="ti ti-device-floppy me-1"></i>
             Simpan Setting Termin
         </button>
-
     </div>
 
 </form>
@@ -252,392 +337,213 @@
 document.addEventListener('DOMContentLoaded', function () {
 
     const form = document.getElementById('build-termin-form');
+    const container = document.getElementById('termin-container');
+    const template = document.getElementById('termin-row-template');
 
-    if (!form) {
+    if (!form || !container || !template) {
         return;
     }
 
-    const container = document.getElementById('termin-container');
     const addButton = document.getElementById('btn-add-termin');
-    const offerTotalInput = document.getElementById('build-offer-total');
-
+    const saveButton = document.getElementById('btn-save-termin');
+    const warningElement = document.getElementById('termin-warning');
     const totalPercentageElement = document.getElementById('total-termin-percentage');
-
     const totalAmountElement = document.getElementById('total-termin-amount');
 
-    const warningElement = document.getElementById('termin-warning');
-
-    const saveButton = document.getElementById('btn-save-termin');
-
     const offerTotal = parseFloat(
-        offerTotalInput?.value || 0
+        document.getElementById('build-offer-total')?.value || 0
     ) || 0;
 
+    const initialRows = @json($initialRows);
+
+    /* ---------- Helper ---------- */
 
     function formatRupiah(value) {
-
-        value = Number(value) || 0;
-
         return 'Rp ' + new Intl.NumberFormat('id-ID', {
             maximumFractionDigits: 0
-        }).format(value);
+        }).format(Math.round(Number(value) || 0));
+    }
 
+    function parseDigits(value) {
+        return Number(String(value || '').replace(/\D/g, '')) || 0;
     }
 
     function getRows() {
-
-        return container.querySelectorAll(
-            '.termin-row'
-        );
-
+        return container.querySelectorAll('.termin-row');
     }
+
+    function fields(row) {
+        return {
+            percentage: row.querySelector('.termin-percentage'),
+            amountDisplay: row.querySelector('.termin-amount'),
+            amountValue: row.querySelector('.termin-amount-value'),
+            description: row.querySelector('.termin-description'),
+            billingDate: row.querySelector('.termin-billing-date'),
+        };
+    }
+
+    /* ---------- Sinkronisasi persentase <-> nominal ---------- */
+
+    function clearAmount(row) {
+        const f = fields(row);
+        f.amountDisplay.value = '';
+        f.amountValue.value = '';
+    }
+
+    function setAmount(row, amount) {
+        const f = fields(row);
+        f.amountDisplay.value = formatRupiah(amount);
+        f.amountValue.value = String(Math.round(amount));
+    }
+
+    // Persentase diubah -> hitung nominal.
+    function syncAmountFromPercentage(row) {
+        const f = fields(row);
+
+        if (f.percentage.value === '') {
+            clearAmount(row);
+            return;
+        }
+
+        const percentage = parseFloat(f.percentage.value) || 0;
+
+        setAmount(row, offerTotal * (percentage / 100));
+    }
+
+    // Nominal diubah -> hitung persentase. Nominal yang diketik user
+    // tidak dihitung ulang, hanya diformat.
+    function syncPercentageFromAmount(row) {
+        const f = fields(row);
+        const digits = String(f.amountDisplay.value).replace(/\D/g, '');
+
+        if (digits === '') {
+            clearAmount(row);
+            f.percentage.value = '';
+            return;
+        }
+
+        const amount = Number(digits);
+
+        f.amountDisplay.value = formatRupiah(amount);
+        f.amountValue.value = String(amount);
+
+        f.percentage.value = offerTotal > 0
+            ? ((amount / offerTotal) * 100).toFixed(2)
+            : '';
+    }
+
+    /* ---------- Ringkasan & validasi ---------- */
 
     function updateTerminNumbers() {
-
-        const rows = getRows();
-
-        rows.forEach((row, index) => {
-
-            const numberElement =
-                row.querySelector('.termin-no');
+        getRows().forEach(function (row, index) {
+            const numberElement = row.querySelector('.termin-no');
 
             if (numberElement) {
-
-                numberElement.textContent =
-                    index + 1;
-
+                numberElement.textContent = index + 1;
             }
-
         });
-
     }
 
-    function calculateTermin() {
-
-        const rows = getRows();
-
+    function refreshSummary() {
         let totalPercentage = 0;
         let totalAmount = 0;
 
+        getRows().forEach(function (row) {
+            const f = fields(row);
 
-        rows.forEach(row => {
-
-            const percentageInput = row.querySelector('.termin-percentage');
-
-            const amountInput = row.querySelector('.termin-amount');
-
-            const percentage =
-                parseFloat(
-                    percentageInput?.value || 0
-                ) || 0;
-
-
-            const amount = offerTotal * (percentage / 100);
-
-            totalPercentage += percentage;
-            totalAmount += amount;
-
-            if (amountInput) {
-
-                amountInput.value =
-                    formatRupiah(amount);
-
-            }
-
+            totalPercentage += parseFloat(f.percentage.value) || 0;
+            totalAmount += Number(f.amountValue.value) || 0;
         });
 
-        if (totalPercentageElement) {
+        totalPercentageElement.textContent = totalPercentage.toFixed(2) + '%';
+        totalAmountElement.textContent = formatRupiah(totalAmount);
 
-            totalPercentageElement.textContent =
-                totalPercentage.toFixed(2) + '%';
+        // Dibandingkan dalam satuan 0,01% agar bebas error floating point.
+        const percentageComplete = Math.round(totalPercentage * 100) === 10000;
 
-        }
+        warningElement.classList.toggle('d-none', percentageComplete);
+        saveButton.disabled = !percentageComplete || offerTotal <= 0;
 
-        if (totalAmountElement) {
-
-            totalAmountElement.textContent =
-                formatRupiah(totalAmount);
-
-        }
-
-        const isValid = Math.abs(totalPercentage - 100) < 0.01;
-
-
-        if (isValid) {
-
-            if (warningElement) {
-
-                warningElement.classList.add(
-                    'd-none'
-                );
-
-            }
-
-            if (saveButton) {
-
-                saveButton.disabled = false;
-
-            }
-
-        } else {
-
-            if (warningElement) {
-
-                warningElement.classList.remove(
-                    'd-none'
-                );
-
-            }
-
-            if (saveButton) {
-
-                saveButton.disabled = true;
-
-            }
-
-        }
-
+        return percentageComplete;
     }
 
-    function createTerminRow() {
+    /* ---------- Tambah / hapus baris ---------- */
 
-        const row = document.createElement('div');
+    function addRow(data) {
+        data = data || {};
 
-        row.className = 'card border-0 shadow-sm mb-3 termin-card termin-row';
+        const row = template.content
+            .cloneNode(true)
+            .querySelector('.termin-row');
 
-        row.innerHTML = `
+        const f = fields(row);
 
-            <div class="card-body p-3">
+        f.percentage.value = data.percentage ?? '';
+        f.description.value = data.description ?? '';
+        f.billingDate.value = data.billing_date ?? '';
 
-                <div class="row g-3 align-items-end">
+        if (f.percentage.value !== '') {
+            syncAmountFromPercentage(row);
+        } else if (parseDigits(data.amount) > 0) {
+            f.amountDisplay.value = String(data.amount);
+            syncPercentageFromAmount(row);
+        }
 
-                    <div class="col-md-1">
+        container.appendChild(row);
 
-                        <label class="form-label text-muted small">
-                            Termin
-                        </label>
-
-                        <div class="termin-number">
-
-                            <span class="termin-no">
-                                1
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                    <div class="col-md-2">
-
-                        <label class="form-label small fw-semibold">
-                            Persentase
-                        </label>
-
-                        <div class="input-group">
-
-                            <input
-                                type="number"
-                                name="percentage[]"
-                                class="form-control termin-percentage"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                placeholder="30"
-                                required
-                            >
-
-                            <span class="input-group-text">
-                                %
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                    <div class="col-md-3">
-
-                        <label class="form-label small fw-semibold">
-                            Nominal Pembayaran
-                        </label>
-
-                        <input
-                            type="text"
-                            class="form-control termin-amount fw-bold"
-                            value="Rp 0"
-                            readonly
-                        >
-
-                    </div>
-
-                    <div class="col-md-5">
-
-                        <label class="form-label small fw-semibold">
-                            Keterangan
-                        </label>
-
-                        <input
-                            type="text"
-                            name="termin_description[]"
-                            class="form-control"
-                            placeholder="Contoh: DP / Pembayaran Tahap 1 / Pelunasan"
-                        >
-
-                    </div>
-
-                    <div class="col-md-1">
-
-                        <button
-                            type="button"
-                            class="btn btn-dark btn-icon w-100 btn-remove-termin"
-                            title="Hapus Termin"
-                        >
-                            <i class="ti ti-trash"></i>
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        `;
-
-
-        return row;
-
+        updateTerminNumbers();
+        refreshSummary();
     }
 
     if (addButton) {
-
-        addButton.addEventListener(
-            'click',
-            function () {
-
-                const row = createTerminRow();
-
-                container.appendChild(row);
-
-                updateTerminNumbers();
-
-                calculateTermin();
-
-            }
-        );
-
+        addButton.addEventListener('click', function () {
+            addRow();
+        });
     }
 
-    container.addEventListener(
-        'click',
-        function (event) {
+    container.addEventListener('click', function (event) {
+        const removeButton = event.target.closest('.btn-remove-termin');
 
-            const removeButton =
-                event.target.closest(
-                    '.btn-remove-termin'
-                );
-
-
-            if (!removeButton) {
-                return;
-            }
-
-            const rows = getRows();
-
-            if (rows.length <= 1) {
-
-                return;
-
-            }
-
-            const row = removeButton.closest('.termin-row');
-
-
-            if (row) {
-
-                row.remove();
-
-                updateTerminNumbers();
-
-                calculateTermin();
-
-            }
-
+        if (!removeButton || getRows().length <= 1) {
+            return;
         }
-    );
 
-    container.addEventListener(
-        'input',
-        function (event) {
+        removeButton.closest('.termin-row')?.remove();
 
-            if (
-                event.target.classList.contains(
-                    'termin-percentage'
-                )
-            ) {
+        updateTerminNumbers();
+        refreshSummary();
+    });
 
-                calculateTermin();
+    container.addEventListener('input', function (event) {
+        const row = event.target.closest('.termin-row');
 
-            }
-
+        if (!row) {
+            return;
         }
-    );
 
-    form.addEventListener(
-        'submit',
-        function (event) {
-
-            const rows =
-                getRows();
-
-
-            let totalPercentage = 0;
-
-
-            rows.forEach(row => {
-
-                const input =
-                    row.querySelector(
-                        '.termin-percentage'
-                    );
-
-
-                totalPercentage +=
-                    parseFloat(
-                        input?.value || 0
-                    ) || 0;
-
-            });
-
-            if (
-                Math.abs(
-                    totalPercentage - 100
-                ) > 0.01
-            ) {
-
-                event.preventDefault();
-
-                if (warningElement) {
-
-                    warningElement.classList.remove(
-                        'd-none'
-                    );
-
-                }
-
-                alert(
-                    'Total persentase termin harus tepat 100%.'
-                );
-
-                return;
-
-            }
-
+        if (event.target.classList.contains('termin-percentage')) {
+            syncAmountFromPercentage(row);
+            refreshSummary();
+            return;
         }
-    );
 
-    updateTerminNumbers();
+        if (event.target.classList.contains('termin-amount')) {
+            syncPercentageFromAmount(row);
+            refreshSummary();
+        }
+    });
 
-    calculateTermin();
+    form.addEventListener('submit', function (event) {
+        if (!refreshSummary()) {
+            event.preventDefault();
 
+            alert('Total persentase termin harus tepat 100%.');
+        }
+    });
+
+    /* ---------- Inisialisasi ---------- */
+
+    (initialRows.length ? initialRows : [{}]).forEach(addRow);
 });
 </script>
 @endpush

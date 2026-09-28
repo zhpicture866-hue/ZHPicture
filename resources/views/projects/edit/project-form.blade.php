@@ -1,4 +1,4 @@
-<div class="card shadow-sm border-0 mb-4">
+<div class=n"card shadow-sm border-0 mb-4">
     <div class="card-body px-5 py-4">
     <h3 class="mb-4 fw-bold">Edit Data Proyek</h3>
         <form id="project-edit-form"
@@ -125,14 +125,6 @@
                             <select id="edit_postal_code" name="postal_code_id" class="form-select select2"></select>
                     </div>
                 </div>
-                
-                    <div class="col-12">
-                        <label class="form-label">Ringkasan Kegiatan</label>
-                        <textarea name="description" rows="3" class="form-control @error('description') is-invalid @enderror" required>{{ old('description') }} </textarea>
-                        @error('description')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
                 
             </div>
         </form>

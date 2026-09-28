@@ -53,7 +53,9 @@
                 <th>
                     Keterangan
                 </th>
-
+                <th>
+                    Tanggal Penagihan
+                </th>
             </tr>
 
         </thead>
@@ -78,6 +80,9 @@
 
                     <td>
                         {{ $termin->description ?: '-' }}
+                    </td>
+                    <td>
+                        {{ $termin->billing_date->translatedFormat('d F Y') }}
                     </td>
 
                 </tr>

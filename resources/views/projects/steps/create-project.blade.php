@@ -212,15 +212,6 @@
             </div>
         </div>
     </div>
-    <div class="row g-4">
-        <div class="col-12">
-            <label class="form-label">Ringkasan Kegiatan</label>
-            <textarea name="description" rows="3" class="form-control @error('description') is-invalid @enderror" required>{{ old('description') }} </textarea>
-            @error('description')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
-        </div>
-    </div>
     <div class="text-end mt-5">
         <button type="submit" class="btn btn-dark px-4">
             <i class="ti ti-device-floppy me-1"></i> Buat Proyek baru

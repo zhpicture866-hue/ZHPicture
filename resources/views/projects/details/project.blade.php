@@ -86,12 +86,6 @@
                 <label class="fw-semibold">Kode Pos</label>
                 <input id="postal_code" type="text" class="form-control" value="{{ $project?->postalCode?->postal_code ?? '-' }}" readonly>
             </div>
-            @if($project->description)
-            <div class="col-12 mt-3">
-                <label class="fw-semibold">Ringkasan Kegiatan</label>
-                <textarea id="description" class="form-control" rows="3" readonly>{{ $project->description }}</textarea>
-            </div>
-            @endif
         </div>
     </div>
     
