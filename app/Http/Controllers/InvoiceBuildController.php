@@ -73,7 +73,6 @@ public function invoiceBuild(Project $project, int $termin)
             $invoice = InvoiceBuild::create([
                 'project_id'         => $project->id,
                 'invoice_type'       => InvoiceBuild::TYPE_WEDDING,
-                // 'invoice_number'     => InvoiceBuildNumberGenerator::generate($termin),
                 'invoice_number' => $this->generateInvoiceNumber(),
                 'invoice_date'       => now(),
                 'termin'             => $termin,

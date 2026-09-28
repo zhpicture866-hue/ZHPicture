@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Invoice Pembangunan Tahap {{ $invoice->termin }}</title>
+<title>Invoice Pembayaran Tahap {{ $invoice->termin }}</title>
 
 <style>
 @page {
@@ -200,6 +200,9 @@ sebesar {{ $inv->payment_percentage }}%
 x Rp {{ number_format($grandTotal,0,',','.') }}
 =
 Rp {{ number_format($inv->amount,0,',','.') }}
+@if($inv->bukti_pembayaran_uploaded_at)
+    ({{ $inv->bukti_pembayaran_uploaded_at->format('d F Y') }})
+@endif
 </li>
 
 @endforeach

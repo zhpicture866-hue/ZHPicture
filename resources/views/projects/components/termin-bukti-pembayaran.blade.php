@@ -13,18 +13,18 @@
         @if($inv->bukti_pembayaran)
             <a href="{{ Storage::url($inv->bukti_pembayaran) }}"
                class="btn btn-outline-dark btn-sm"
-               target="_blank">
+               target="_blank"
+               title="Lihat Bukti">
                 <i class="ti ti-file-check"></i>
-                Lihat Bukti
             </a>
         @endif
 
         <button type="button"
                 class="btn btn-dark btn-sm btn-upload-bukti-pembayaran"
                 data-bs-toggle="modal"
-                data-bs-target="#modal-bukti-pembayaran-{{ $inv->id }}">
+                data-bs-target="#modal-bukti-pembayaran-{{ $inv->id }}"
+                title="{{ $inv->bukti_pembayaran ? 'Ganti Bukti' : 'Upload Bukti' }}">
             <i class="ti ti-upload"></i>
-            {{ $inv->bukti_pembayaran ? 'Ganti Bukti' : 'Upload Bukti' }}
         </button>
 
         {{-- Modal upload --}}

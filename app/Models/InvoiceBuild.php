@@ -21,6 +21,7 @@ class InvoiceBuild extends Model
         'invoice_date' => 'date',
         'approved_at'  => 'datetime',
         'rejected_at'  => 'datetime',
+        'bukti_pembayaran_uploaded_at' => 'datetime',
     ];
 
     protected $fillable = [
