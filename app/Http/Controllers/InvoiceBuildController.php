@@ -146,7 +146,6 @@ public function approve(Project $project, InvoiceBuild $invoice)
         abort(403);
     }
 
-    // Invoice harus sudah pernah dibuka/download
     if (!$invoice->downloaded_at) {
         return back()->with(
             'error',
@@ -154,7 +153,6 @@ public function approve(Project $project, InvoiceBuild $invoice)
         );
     }
 
-    // Jangan approve ulang
     if ($invoice->approved_at) {
         return back()->with(
             'info',
@@ -164,7 +162,6 @@ public function approve(Project $project, InvoiceBuild $invoice)
 
     $currentTermin = (int) $invoice->termin;
 
-    // Pastikan termin sebelumnya sudah approved
     if ($currentTermin > 1) {
 
         $previousInvoice = InvoiceBuild::where('project_id', $project->id)
@@ -195,33 +192,18 @@ public function approve(Project $project, InvoiceBuild $invoice)
 
         if ($currentTermin === $lastTermin) {
 
-            // Selesaikan level Invoice
-            $invoiceLevel = $project->levels()
-                ->where('level_name', 'Invoice')
-                ->first();
-
-            if ($invoiceLevel && !$invoiceLevel->is_completed) {
-                $invoiceLevel->update([
+            // Semua termin sudah approved -> proses "Setting Termin"
+            // (yang sekarang memuat invoice & pembayaran) benar-benar selesai.
+            // Update ini idempotent (aman dipanggil berkali-kali), jadi tidak
+            // perlu lock tambahan. Kedua level ditandai sekaligus supaya
+            // getCurrentStep() tidak berhenti di level yang lebih awal.
+            $project->levels()
+                ->whereIn('level_name', ['Setting Termin', 'Invoice'])
+                ->where('is_completed', false)
+                ->update([
                     'is_completed' => true,
                     'completed_at' => now(),
                 ]);
-            }
-
-            // $nextLevel = $project->levels()
-            //     ->where('level_order', '>', $invoiceLevel?->level_order)
-            //     ->orderBy('level_order')
-            //     ->first();
-
-            // if ($nextLevel) {
-            //     $nextLevel->update([
-            //         'is_started' => true,
-            //         'started_at' => $nextLevel->started_at ?? now(),
-            //     ]);
-
-            //     $project->update([
-            //         'active_step' => $nextLevel->level_order + 1,
-            //     ]);
-            // } 
         }
     });
 
