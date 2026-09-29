@@ -1,14 +1,14 @@
 @php
     $offerTotal = (float) ($project->rab?->grand_total ?? 0);
- 
+
     // Data lama (setelah validasi gagal) supaya baris termin tidak hilang.
     $oldPercentages  = (array) old('percentage', ['']);
     $oldAmounts      = (array) old('amount', []);
     $oldDescriptions = (array) old('termin_description', []);
     $oldBillingDates = (array) old('billing_date', []);
- 
+
     $initialRows = [];
- 
+
     foreach ($oldPercentages as $i => $percentage) {
         $initialRows[] = [
             'percentage'   => $percentage,
@@ -18,12 +18,11 @@
         ];
     }
 @endphp
-@can('lihat daftar proyek')
+
 <form
     action="{{ route('projects.build-termin.store', $project->id) }}"
     method="POST"
     id="build-termin-form"
-    enctype="multipart/form-data"
 >
     @csrf
 
@@ -105,7 +104,10 @@
 
                     {{-- NOMOR --}}
                     <div class="col-md-1">
-                        <label class="form-label text-muted small">Termin</label>
+                        <label class="form-label text-muted small">
+                            Termin
+                        </label>
+
                         <div class="termin-number">
                             <span class="termin-no">1</span>
                         </div>
@@ -113,62 +115,89 @@
 
                     {{-- PERSENTASE --}}
                     <div class="col-md-2">
-                        <label class="form-label small fw-semibold">Persentase</label>
+                        <label class="form-label small fw-semibold">
+                            Persentase
+                        </label>
+
                         <div class="input-group">
-                            <input type="number" name="percentage[]" class="form-control termin-percentage"
-                                min="0" max="100" step="0.01" placeholder="30" required>
+                            <input
+                                type="number"
+                                name="percentage[]"
+                                class="form-control termin-percentage"
+                                min="0.01"
+                                max="100"
+                                step="0.0001"
+                                placeholder="30"
+                                required
+                            >
+
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
 
                     {{-- NOMINAL --}}
                     <div class="col-md-3">
-                        <label class="form-label small fw-semibold">Nominal Pembayaran</label>
-                        <input type="text" class="form-control termin-amount fw-bold" placeholder="Rp 0"
-                            inputmode="numeric" autocomplete="off">
-                        <input type="hidden" name="amount[]" class="termin-amount-value" value="">
+                        <label class="form-label small fw-semibold">
+                            Nominal Pembayaran
+                        </label>
+
+                        {{-- Input tampilan (berformat Rp), tanpa name --}}
+                        <input
+                            type="text"
+                            class="form-control termin-amount fw-bold"
+                            placeholder="Rp 0"
+                            inputmode="numeric"
+                            autocomplete="off"
+                        >
+
+                        {{-- Nilai angka murni yang dikirim ke server --}}
+                        <input
+                            type="hidden"
+                            name="amount[]"
+                            class="termin-amount-value"
+                            value=""
+                        >
                     </div>
 
                     {{-- KETERANGAN --}}
                     <div class="col-md-3">
-                        <label class="form-label small fw-semibold">Keterangan</label>
-                        <input type="text" name="termin_description[]" class="form-control termin-description"
-                            placeholder="Contoh: DP / Tahap 1 / Pelunasan">
+                        <label class="form-label small fw-semibold">
+                            Keterangan
+                        </label>
+
+                        <input
+                            type="text"
+                            name="termin_description[]"
+                            class="form-control termin-description"
+                            placeholder="Contoh: DP / Tahap 1 / Pelunasan"
+                        >
                     </div>
 
                     {{-- TANGGAL PENAGIHAN --}}
                     <div class="col-md-2">
-                        <label class="form-label small fw-semibold">Tanggal Penagihan</label>
-                        <input type="date" name="billing_date[]" class="form-control termin-billing-date">
+                        <label class="form-label small fw-semibold">
+                            Tanggal Penagihan
+                        </label>
+
+                        <input
+                            type="date"
+                            name="billing_date[]"
+                            class="form-control termin-billing-date"
+                        >
                     </div>
 
                     {{-- HAPUS --}}
                     <div class="col-md-1">
-                        <button type="button" class="btn btn-dark btn-icon btn-remove-termin" title="Hapus Termin">
+                        <button
+                            type="button"
+                            class="btn btn-dark btn-icon btn-remove-termin"
+                            title="Hapus Termin"
+                        >
                             <i class="ti ti-trash"></i>
                         </button>
                     </div>
 
                 </div>
-
-                {{-- BARIS BARU: BUKTI PEMBAYARAN --}}
-                {{-- <div class="row g-3 align-items-end mt-1">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">
-                            Bukti Pembayaran
-                        </label>
-                        <input
-                            type="file"
-                            name="bukti_pembayaran[]"
-                            class="form-control termin-bukti-pembayaran"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                        >
-                        <div class="form-hint mt-1 small text-muted">
-                            Format: PDF, JPG, PNG. Maks. 5MB.
-                        </div>
-                    </div>
-                </div> --}}
-
             </div>
         </div>
     </template>
@@ -232,16 +261,61 @@
 
                     <div>
                         <div class="fw-bold">
-                            Persentase belum lengkap
+                            Nominal melebihi total penawaran
                         </div>
 
                         <div class="small">
-                            Total persentase termin harus tepat 100%.
+                            Total nominal termin selain termin terakhir sudah melebihi total penawaran.
                         </div>
                     </div>
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    {{-- MASA PEMELIHARAAN --}}
+    <div class="d-flex align-items-center justify-content-between mb-3 mt-4">
+        <div>
+            <h3 class="mb-1 fw-bold">
+                Masa Pemeliharaan
+            </h3>
+
+            <div class="text-muted">
+                Masa pemeliharaan akan ditampilkan pada form kontrak.
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <div class="row align-items-end">
+                <div class="col-md-6">
+
+                    <label class="form-label fw-semibold">
+                        Lama Masa Pemeliharaan
+                    </label>
+
+                    <div class="input-group">
+                        <input
+                            type="number"
+                            name="masa_pemeliharaan"
+                            class="form-control"
+                            min="0"
+                            step="1"
+                            value="{{ old('masa_pemeliharaan') }}"
+                            required
+                        >
+
+                        <span class="input-group-text">Hari</span>
+                    </div>
+
+                    <div class="form-hint mt-2">
+                        Contoh: 90 hari, 120 hari, atau 180 hari.
+                    </div>
+
+                </div>
+            </div>
         </div>
     </div>
 
@@ -257,7 +331,7 @@
     </div>
 
 </form>
-@endcan
+
 @push('js')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -288,10 +362,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return 'Rp ' + new Intl.NumberFormat('id-ID', {
             maximumFractionDigits: 0
         }).format(Math.round(Number(value) || 0));
-    }
-
-    function parseDigits(value) {
-        return Number(String(value || '').replace(/\D/g, '')) || 0;
     }
 
     function getRows() {
@@ -354,8 +424,61 @@ document.addEventListener('DOMContentLoaded', function () {
         f.amountValue.value = String(amount);
 
         f.percentage.value = offerTotal > 0
-            ? ((amount / offerTotal) * 100).toFixed(2)
+            ? ((amount / offerTotal) * 100).toFixed(4)
             : '';
+    }
+
+    // Termin TERAKHIR selalu menyerap sisa dari termin-termin lain, supaya
+    // total nominal selalu pas sama dengan total penawaran (tanpa sisa
+    // pembulatan) -- tidak peduli apakah user mengedit lewat kolom
+    // persentase atau nominal. Karena itu baris terakhir dikunci read-only
+    // (lihat updateAutoLastRow()).
+    function applyLastRowRemainder() {
+        const rows = Array.from(getRows());
+
+        if (rows.length === 0) {
+            return false;
+        }
+
+        const lastRow = rows[rows.length - 1];
+        const otherRows = rows.slice(0, -1);
+
+        const sumOthers = otherRows.reduce(function (sum, row) {
+            return sum + (Number(fields(row).amountValue.value) || 0);
+        }, 0);
+
+        const remainder = Math.max(offerTotal - sumOthers, 0);
+
+        setAmount(lastRow, remainder);
+
+        const f = fields(lastRow);
+        f.percentage.value = offerTotal > 0
+            ? ((remainder / offerTotal) * 100).toFixed(4)
+            : '';
+
+        // true kalau nominal termin-termin lain sudah melebihi total penawaran.
+        return sumOthers > offerTotal;
+    }
+
+    // Baris terakhir dikunci (read-only) karena nilainya otomatis mengikuti
+    // sisa dari baris-baris lain -- lihat applyLastRowRemainder().
+    function updateAutoLastRow() {
+        const rows = Array.from(getRows());
+
+        rows.forEach(function (row, index) {
+            const isLast = index === rows.length - 1;
+            const f = rows.length ? fields(row) : null;
+
+            if (!f) {
+                return;
+            }
+
+            f.percentage.readOnly = isLast;
+            f.amountDisplay.readOnly = isLast;
+            f.percentage.title = isLast ? 'Dihitung otomatis dari sisa termin lain' : '';
+            f.amountDisplay.title = f.percentage.title;
+            row.classList.toggle('termin-row-auto', isLast);
+        });
     }
 
     /* ---------- Ringkasan & validasi ---------- */
@@ -371,6 +494,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function refreshSummary() {
+        // Baris terakhir dipaksa jadi remainder DULU, baru totalnya dihitung
+        // -- jadi total yang tampil selalu pas, dan yang tersimpan (amount[])
+        // selalu sama dengan yang tampil di layar.
+        const exceeded = applyLastRowRemainder();
+
         let totalPercentage = 0;
         let totalAmount = 0;
 
@@ -384,13 +512,18 @@ document.addEventListener('DOMContentLoaded', function () {
         totalPercentageElement.textContent = totalPercentage.toFixed(2) + '%';
         totalAmountElement.textContent = formatRupiah(totalAmount);
 
-        // Dibandingkan dalam satuan 0,01% agar bebas error floating point.
-        const percentageComplete = Math.round(totalPercentage * 100) === 10000;
+        // Warning sekarang hanya untuk kasus nominal termin lain melebihi
+        // total penawaran (bikin termin terakhir jadi 0) -- bukan lagi soal
+        // "belum 100%", karena baris terakhir selalu otomatis menutup sisanya.
+        warningElement.classList.toggle('d-none', !exceeded);
 
-        warningElement.classList.toggle('d-none', percentageComplete);
-        saveButton.disabled = !percentageComplete || offerTotal <= 0;
+        const isValid = !exceeded && offerTotal > 0;
 
-        return percentageComplete;
+        if (saveButton) {
+            saveButton.disabled = !isValid;
+        }
+
+        return isValid;
     }
 
     /* ---------- Tambah / hapus baris ---------- */
@@ -408,16 +541,28 @@ document.addEventListener('DOMContentLoaded', function () {
         f.description.value = data.description ?? '';
         f.billingDate.value = data.billing_date ?? '';
 
-        if (f.percentage.value !== '') {
+        // Nominal yang sudah ada (dari old()) ditampilkan apa adanya,
+        // tidak dihitung ulang dari persentase.
+        const storedAmount = Number(data.amount);
+        const hasStoredAmount =
+            data.amount !== undefined &&
+            data.amount !== null &&
+            data.amount !== '' &&
+            Number.isFinite(storedAmount);
+
+        if (hasStoredAmount && f.percentage.value !== '') {
+            setAmount(row, storedAmount);
+        } else if (f.percentage.value !== '') {
             syncAmountFromPercentage(row);
-        } else if (parseDigits(data.amount) > 0) {
-            f.amountDisplay.value = String(data.amount);
+        } else if (hasStoredAmount && storedAmount > 0) {
+            setAmount(row, storedAmount);
             syncPercentageFromAmount(row);
         }
 
         container.appendChild(row);
 
         updateTerminNumbers();
+        updateAutoLastRow();
         refreshSummary();
     }
 
@@ -437,6 +582,7 @@ document.addEventListener('DOMContentLoaded', function () {
         removeButton.closest('.termin-row')?.remove();
 
         updateTerminNumbers();
+        updateAutoLastRow();
         refreshSummary();
     });
 
@@ -463,7 +609,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!refreshSummary()) {
             event.preventDefault();
 
-            alert('Total persentase termin harus tepat 100%.');
+            alert('Total nominal termin selain termin terakhir melebihi total penawaran.');
         }
     });
 

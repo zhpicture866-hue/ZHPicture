@@ -569,8 +569,8 @@
         value = Number(value) || 0;
 
         return 'Rp ' + new Intl.NumberFormat('id-ID', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
+            minimumFractionDigits: 3,
+            maximumFractionDigits: 3
         }).format(value);
     }
 

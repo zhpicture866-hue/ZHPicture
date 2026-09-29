@@ -9,7 +9,7 @@
         <div class="col-md-6">
 
             <label class="form-label text-muted">
-                Total Penawaran Harga
+                Total Penawaran Build
             </label>
 
             <div class="fw-semibold">
@@ -46,11 +46,11 @@
                     Termin
                 </th>
 
-                <th width="80" class="text-center">
-                    %
+                <th width="150" class="text-end">
+                    Persentase
                 </th>
 
-                <th width="150" class="text-center">
+                <th width="220" class="text-end">
                     Nominal
                 </th>
 
@@ -65,9 +65,7 @@
                 <th class="text-center">
                     Invoice
                 </th>
-                <th class="text-center">
-                    Bukti Pembayaran
-                </th>
+
             </tr>
 
         </thead>
@@ -82,11 +80,11 @@
                         {{ $termin->termin_no }}
                     </td>
 
-                    <td class="text-center">
-                        {{ rtrim(rtrim(number_format($termin->percentage, 2, ',', '.'), '0'), ',') }}%
+                    <td class="text-end">
+                        {{ rtrim(rtrim(number_format($termin->percentage, 4, ',', '.'), '0'), ',') }}%
                     </td>
 
-                    <td class="text-center">
+                    <td class="text-end">
                         Rp {{ number_format($termin->amount, 0, ',', '.') }}
                     </td>
 
@@ -104,12 +102,6 @@
                             'termins' => $termins,
                             'termin'  => $termin,
                             'index'   => $index,
-                        ])
-                    </td>
-                    <td class="text-center">
-                        @include('projects.components.termin-bukti-pembayaran', [
-                            'project' => $project,
-                            'termin'  => $termin,
                         ])
                     </td>
 
@@ -134,7 +126,7 @@
                             rtrim(
                                 number_format(
                                     $termins->sum('percentage'),
-                                    2,
+                                    4,
                                     ',',
                                     '.'
                                 ),

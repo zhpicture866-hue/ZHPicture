@@ -144,7 +144,7 @@
                                 class="form-control termin-percentage"
                                 min="0.01"
                                 max="100"
-                                step="0.01"
+                                step="0.0001"
                                 placeholder="30"
                                 required
                             >
@@ -279,11 +279,11 @@
 
                     <div>
                         <div class="fw-bold">
-                            Persentase belum lengkap
+                            Nominal melebihi total penawaran
                         </div>
 
                         <div class="small">
-                            Total persentase termin harus tepat 100%.
+                            Total nominal termin selain termin terakhir sudah melebihi total penawaran.
                         </div>
                     </div>
                 </div>
@@ -400,8 +400,61 @@ document.addEventListener('DOMContentLoaded', function () {
         f.amountValue.value = String(amount);
 
         f.percentage.value = offerTotal > 0
-            ? ((amount / offerTotal) * 100).toFixed(2)
+            ? ((amount / offerTotal) * 100).toFixed(4)
             : '';
+    }
+
+    // Termin TERAKHIR selalu menyerap sisa dari termin-termin lain, supaya
+    // total nominal selalu pas sama dengan total penawaran (tanpa sisa
+    // pembulatan) -- tidak peduli apakah user mengedit lewat kolom
+    // persentase atau nominal. Karena itu baris terakhir dikunci read-only
+    // (lihat updateAutoLastRow()).
+    function applyLastRowRemainder() {
+        const rows = Array.from(getRows());
+
+        if (rows.length === 0) {
+            return false;
+        }
+
+        const lastRow = rows[rows.length - 1];
+        const otherRows = rows.slice(0, -1);
+
+        const sumOthers = otherRows.reduce(function (sum, row) {
+            return sum + (Number(fields(row).amountValue.value) || 0);
+        }, 0);
+
+        const remainder = Math.max(offerTotal - sumOthers, 0);
+
+        setAmount(lastRow, remainder);
+
+        const f = fields(lastRow);
+        f.percentage.value = offerTotal > 0
+            ? ((remainder / offerTotal) * 100).toFixed(4)
+            : '';
+
+        // true kalau nominal termin-termin lain sudah melebihi total penawaran.
+        return sumOthers > offerTotal;
+    }
+
+    // Baris terakhir dikunci (read-only) karena nilainya otomatis mengikuti
+    // sisa dari baris-baris lain -- lihat applyLastRowRemainder().
+    function updateAutoLastRow() {
+        const rows = Array.from(getRows());
+
+        rows.forEach(function (row, index) {
+            const isLast = index === rows.length - 1;
+            const f = rows.length ? fields(row) : null;
+
+            if (!f) {
+                return;
+            }
+
+            f.percentage.readOnly = isLast;
+            f.amountDisplay.readOnly = isLast;
+            f.percentage.title = isLast ? 'Dihitung otomatis dari sisa termin lain' : '';
+            f.amountDisplay.title = f.percentage.title;
+            row.classList.toggle('termin-row-auto', isLast);
+        });
     }
 
     /* ---------- Ringkasan & validasi ---------- */
@@ -417,6 +470,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function refreshSummary() {
+        // Baris terakhir dipaksa jadi remainder DULU, baru totalnya dihitung
+        // -- jadi total yang tampil selalu pas, dan yang tersimpan (amount[])
+        // selalu sama dengan yang tampil di layar.
+        const exceeded = applyLastRowRemainder();
+
         let totalPercentage = 0;
         let totalAmount = 0;
 
@@ -430,16 +488,18 @@ document.addEventListener('DOMContentLoaded', function () {
         totalPercentageElement.textContent = totalPercentage.toFixed(2) + '%';
         totalAmountElement.textContent = formatRupiah(totalAmount);
 
-        // Dibandingkan dalam satuan 0,01% agar bebas error floating point.
-        const percentageComplete = Math.round(totalPercentage * 100) === 10000;
+        // Warning sekarang hanya untuk kasus nominal termin lain melebihi
+        // total penawaran (bikin termin terakhir jadi 0) -- bukan lagi soal
+        // "belum 100%", karena baris terakhir selalu otomatis menutup sisanya.
+        warningElement.classList.toggle('d-none', !exceeded);
 
-        warningElement.classList.toggle('d-none', percentageComplete);
+        const isValid = !exceeded && offerTotal > 0;
 
         if (saveButton) {
-            saveButton.disabled = !percentageComplete || offerTotal <= 0;
+            saveButton.disabled = !isValid;
         }
 
-        return percentageComplete;
+        return isValid;
     }
 
     /* ---------- Tambah / hapus baris ---------- */
@@ -478,6 +538,7 @@ document.addEventListener('DOMContentLoaded', function () {
         container.appendChild(row);
 
         updateTerminNumbers();
+        updateAutoLastRow();
         refreshSummary();
     }
 
@@ -497,6 +558,7 @@ document.addEventListener('DOMContentLoaded', function () {
         removeButton.closest('.termin-row')?.remove();
 
         updateTerminNumbers();
+        updateAutoLastRow();
         refreshSummary();
     });
 
@@ -523,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!refreshSummary()) {
             event.preventDefault();
 
-            alert('Total persentase termin harus tepat 100%.');
+            alert('Total nominal termin selain termin terakhir melebihi total penawaran.');
         }
     });
 

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 
 class BuildTerminController extends Controller
 {
-    public function store(Request $request, $projectId)
+public function store(Request $request, $projectId)
 {
     abort_if(
         auth()->user()->cannot('ubah data proyek'),
@@ -38,18 +38,16 @@ class BuildTerminController extends Controller
     }
  
     // Jumlah baris termin dari input, dipakai untuk memastikan
-    // semua array (persentase, tanggal, keterangan) sama panjang.
-    $terminCount = count((array) $request->input('percentage', []));
+    // semua array (nominal, tanggal, keterangan) sama panjang.
+    $terminCount = count((array) $request->input('amount', []));
  
+    // NOMINAL adalah sumber kebenaran, bukan persentase — supaya total
+    // nominal semua termin selalu pas sama dengan grand_total penawaran,
+    // tanpa sisa pembulatan. Persentase hanya dihitung ulang dari nominal
+    // untuk disimpan sebagai data tampilan.
     $validated = $request->validate([
-        'percentage'   => ['required', 'array', 'min:1', 'max:24'],
-        'percentage.*' => [
-            'required',
-            'numeric',
-            'min:0.01',
-            'max:100',
-            'regex:/^\d+(\.\d{1,2})?$/', // maksimal 2 desimal
-        ],
+        'amount'   => ['required', 'array', 'min:1', 'max:24'],
+        'amount.*' => ['required', 'integer', 'min:1'],
  
         'termin_description'   => ['nullable', 'array', 'size:' . $terminCount],
         'termin_description.*' => ['nullable', 'string', 'max:255'],
@@ -59,26 +57,37 @@ class BuildTerminController extends Controller
     ]);
  
     // Reindex supaya urutan 0..n-1 dan termin_no selalu berurutan.
-    $percentages  = array_map('floatval', array_values($validated['percentage']));
+    $amounts      = array_map('intval', array_values($validated['amount']));
     $billingDates = array_values($validated['billing_date']);
     $descriptions = array_values($validated['termin_description'] ?? []);
  
-    // Bandingkan dalam satuan 0,01% (sama seperti di JavaScript).
-    if ((int) round(array_sum($percentages) * 100) !== 10000) {
+    $offerTotal = (float) $project->rab->grand_total;
+ 
+    // Nominal SELAIN termin terakhir dipercaya apa adanya (itu yang benar-
+    // benar diketik/dilihat user, baik lewat kolom nominal maupun hasil
+    // konversi dari kolom persentase). Termin terakhir WAJIB menyerap sisa,
+    // supaya totalnya selalu pas — ini juga alasan kolom nominal & persentase
+    // termin terakhir dikunci (read-only) di form.
+    $lastIndex    = count($amounts) - 1;
+    $sumOthers    = array_sum(array_slice($amounts, 0, $lastIndex));
+    $lastRemainder = $offerTotal - $sumOthers;
+ 
+    if ($sumOthers > $offerTotal || $lastRemainder < 1) {
         return back()
             ->withErrors([
-                'percentage' => 'Total persentase termin harus tepat 100%.',
+                'percentage' => 'Total nominal termin selain termin terakhir sudah '
+                    . 'melebihi total penawaran. Kurangi nominal salah satu termin.',
             ])
             ->withInput();
     }
  
-    $offerTotal = (float) $project->rab->grand_total;
+    $amounts[$lastIndex] = (int) round($lastRemainder);
  
     try {
         DB::transaction(function () use (
             $project,
             $currentLevel,
-            $percentages,
+            $amounts,
             $billingDates,
             $descriptions,
             $offerTotal
@@ -93,19 +102,13 @@ class BuildTerminController extends Controller
                 );
             }
  
-            $lastIndex = count($percentages) - 1;
-            $allocated = 0;
+            foreach ($amounts as $index => $amount) {
  
-            foreach ($percentages as $index => $percentage) {
- 
-                // Termin biasa dibulatkan ke rupiah. Termin terakhir mengambil
-                // sisa, sehingga jumlah semua termin selalu sama dengan
-                // grand_total penawaran.
-                $amount = $index === $lastIndex
-                    ? round($offerTotal - $allocated, 2)
-                    : round($offerTotal * ($percentage / 100));
- 
-                $allocated += $amount;
+                // Persentase HANYA untuk tampilan, dihitung dari nominal
+                // (yang sudah pasti tepat), bukan sebaliknya.
+                $percentage = $offerTotal > 0
+                    ? round($amount / $offerTotal * 100, 4)
+                    : 0;
  
                 BuildTermin::create([
                     'project_id'   => $project->id,
@@ -153,6 +156,8 @@ class BuildTerminController extends Controller
         ->route('projects.create', ['project_id' => $project->id])
         ->with('success', 'Setting termin berhasil disimpan.');
 }
+ 
+ 
 // public function store(Request $request, $projectId)
 // {
 //     abort_if(
@@ -315,19 +320,19 @@ public function update(Request $request, $projectId)
         auth()->user()->cannot('ubah data proyek'),
         403
     );
-
+ 
     $project = Project::with(['rab', 'levels'])->findOrFail($projectId);
-
+ 
     $currentLevel = $project->levels->firstWhere('level_name', 'Setting Termin');
-
+ 
     abort_if(! $currentLevel, 404);
-
+ 
     if (! $project->rab) {
         return back()->withErrors([
             'termin' => 'Penawaran Harga belum tersedia.',
         ]);
     }
-
+ 
     // Edit hanya untuk termin yang sudah pernah disimpan.
     // Kalau belum ada, arahkan ke simpan (store).
     if (! $project->buildTermins()->exists()) {
@@ -335,68 +340,71 @@ public function update(Request $request, $projectId)
             'termin' => 'Setting termin belum tersedia. Simpan setting termin terlebih dahulu.',
         ]);
     }
-
+ 
     // Jumlah baris termin dari input, dipakai untuk memastikan
-    // semua array (persentase, tanggal, keterangan) sama panjang.
-    $terminCount = count((array) $request->input('percentage', []));
-
+    // semua array (nominal, tanggal, keterangan) sama panjang.
+    $terminCount = count((array) $request->input('amount', []));
+ 
+    // NOMINAL adalah sumber kebenaran, bukan persentase — supaya total
+    // nominal semua termin selalu pas sama dengan grand_total penawaran,
+    // tanpa sisa pembulatan. Persentase hanya dihitung ulang dari nominal
+    // untuk disimpan sebagai data tampilan.
     $validated = $request->validate([
-        'percentage'   => ['required', 'array', 'min:1', 'max:24'],
-        'percentage.*' => [
-            'required',
-            'numeric',
-            'min:0.01',
-            'max:100',
-            'regex:/^\d+(\.\d{1,2})?$/', // maksimal 2 desimal
-        ],
-
+        'amount'   => ['required', 'array', 'min:1', 'max:24'],
+        'amount.*' => ['required', 'integer', 'min:1'],
+ 
         'termin_description'   => ['nullable', 'array', 'size:' . $terminCount],
         'termin_description.*' => ['nullable', 'string', 'max:255'],
-
+ 
         'billing_date'   => ['required', 'array', 'size:' . $terminCount],
         'billing_date.*' => ['required', 'date'],
     ]);
-
+ 
     // Reindex supaya urutan 0..n-1 dan termin_no selalu berurutan.
-    $percentages  = array_map('floatval', array_values($validated['percentage']));
+    $amounts      = array_map('intval', array_values($validated['amount']));
     $billingDates = array_values($validated['billing_date']);
     $descriptions = array_values($validated['termin_description'] ?? []);
-
-    // Bandingkan dalam satuan 0,01% (sama seperti di JavaScript).
-    if ((int) round(array_sum($percentages) * 100) !== 10000) {
+ 
+    $offerTotal = (float) $project->rab->grand_total;
+ 
+    // Nominal selain termin terakhir dipercaya apa adanya. Termin terakhir
+    // wajib menyerap sisa, supaya totalnya selalu pas — sama seperti store().
+    $lastIndex     = count($amounts) - 1;
+    $sumOthers     = array_sum(array_slice($amounts, 0, $lastIndex));
+    $lastRemainder = $offerTotal - $sumOthers;
+ 
+    if ($sumOthers > $offerTotal || $lastRemainder < 1) {
         return back()
             ->withErrors([
-                'percentage' => 'Total persentase termin harus tepat 100%.',
+                'percentage' => 'Total nominal termin selain termin terakhir sudah '
+                    . 'melebihi total penawaran. Kurangi nominal salah satu termin.',
             ])
             ->withInput();
     }
-
-    $offerTotal = (float) $project->rab->grand_total;
-
+ 
+    $amounts[$lastIndex] = (int) round($lastRemainder);
+ 
     try {
         DB::transaction(function () use (
             $project,
-            $percentages,
+            $amounts,
             $billingDates,
             $descriptions,
             $offerTotal
         ) {
             // Kunci baris proyek supaya dua update bersamaan tidak saling menimpa.
             Project::whereKey($project->id)->lockForUpdate()->first();
-
+ 
             // Ganti seluruh termin lama dengan yang baru.
             BuildTermin::where('project_id', $project->id)->delete();
-
-            $lastIndex = count($percentages) - 1;
-            $allocated = 0;
-
-            foreach ($percentages as $index => $percentage) {
-                $amount = $index === $lastIndex
-                    ? round($offerTotal - $allocated, 2)
-                    : round($offerTotal * ($percentage / 100));
-
-                $allocated += $amount;
-
+ 
+            foreach ($amounts as $index => $amount) {
+ 
+                // Persentase hanya untuk tampilan, dihitung dari nominal.
+                $percentage = $offerTotal > 0
+                    ? round($amount / $offerTotal * 100, 4)
+                    : 0;
+ 
                 BuildTermin::create([
                     'project_id'   => $project->id,
                     'termin_no'    => $index + 1,
@@ -407,25 +415,26 @@ public function update(Request $request, $projectId)
                 ]);
             }
         });
-
+ 
     } catch (\Throwable $e) {
-
+ 
         // DB::transaction sudah rollback otomatis.
         Log::error('Gagal memperbarui setting termin', [
             'project_id' => $project->id,
             'error'      => $e->getMessage(),
             'trace'      => $e->getTraceAsString(),
         ]);
-
+ 
         return back()
             ->withErrors([
                 'termin' => 'Terjadi kesalahan saat memperbarui setting termin.',
             ])
             ->withInput();
     }
-
+ 
     return redirect()
         ->route('projects.create', ['project_id' => $project->id])
         ->with('success', 'Setting termin berhasil diperbarui.');
 }
+ 
 }

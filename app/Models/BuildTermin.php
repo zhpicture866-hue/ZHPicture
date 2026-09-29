@@ -24,7 +24,7 @@ class BuildTermin extends Model
     ];
 
     protected $casts = [
-        'percentage' => 'decimal:2',
+        'percentage' => 'decimal:4',
         'amount' => 'decimal:2',
         'billing_date' => 'date',
     ];

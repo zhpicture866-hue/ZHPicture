@@ -6,12 +6,15 @@
     <div class="sidebar-inner">
         <div class="sidebar-header">
             <div class="sidebar-logo-wrapper">
-                <a href="/" class="logo-expand">
-                    <img src="{{ asset('images/logo-landscape.png') }}" alt="Ruang Kembali">
-                </a>
-                <a href="/" class="logo-collapse">
-                    <img src="{{ asset('images/logo-collapse.png') }}" alt="Logo Icon">
-                </a>
+                {{-- perlu diganti sesuai brand guidesline --}}
+                <img src="{{ asset('images/logo-landscape.png') }}"
+                    class="logo-expand"
+                    alt="ZH Picture">
+                {{-- perlu diganti sesuai brand guidesline --}}
+                <img src="{{ asset('images/logo-collapse.png') }}"
+                    class="logo-collapse"
+                    alt="ZH Picture">
+
             </div>
             <button id="sidebarToggle" class="sidebar-toggle-btn d-none d-lg-flex">
                 <i class="ti ti-layout-sidebar-left-collapse"></i>
