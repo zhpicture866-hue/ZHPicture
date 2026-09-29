@@ -145,12 +145,11 @@ return [
     ],
 ],
 
-'task_approved' => [
-    'title' => 'Task Disetujui',
+'invoice_build_approved' => [
+    'title' => 'Invoice Tahap :termin Disetujui',
     'message' => [
-        'assigned' => 'Task Anda telah disetujui.',
-        'admin'    => 'Task telah disetujui.',
-        'customer' => 'Task :task telah disetujui.',
+        'Super-Admin' => 'Invoice pembayaran event tahap :termin senilai :amount telah disetujui.',
+        'customer'    => 'Pembayaran tahap :termin senilai :amount berhasil dikonfirmasi. Terima kasih!',
     ],
 ],
 

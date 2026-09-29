@@ -69,6 +69,11 @@ public function invoiceBuild(Project $project, int $termin)
             ->lockForUpdate()
             ->first();
 
+        // Dicatat supaya notifikasi "invoice tersedia" hanya dikirim
+        // sekali, saat baris invoice-nya benar-benar baru dibuat —
+        // bukan setiap kali admin klik download/refresh.
+        $justCreated = false;
+
         if (!$invoice) {
 
             $invoice = InvoiceBuild::create([
@@ -83,6 +88,8 @@ public function invoiceBuild(Project $project, int $termin)
                 'amount'             => $newAmount,
                 'status'             => 'waiting',
             ]);
+
+            $justCreated = true;
 
         } else {
 
@@ -110,10 +117,15 @@ public function invoiceBuild(Project $project, int $termin)
         }
 
         return [
-            'invoice'    => $invoice->fresh(),
-            'grandTotal' => $grandTotal,
+            'invoice'     => $invoice->fresh(),
+            'grandTotal'  => $grandTotal,
+            'justCreated' => $justCreated,
         ];
     });
+
+    if ($result['justCreated']) {
+        $this->notifyInvoiceBuildCreated($project, $result['invoice']);
+    }
 
     return Pdf::loadView('invoice.build', [
         'invoice'    => $result['invoice'],
@@ -125,6 +137,75 @@ public function invoiceBuild(Project $project, int $termin)
     ->stream(
         "Invoice-Build-Termin-{$termin}-{$project->project_name}.pdf"
     );
+}
+
+/**
+ * Beri tahu customer & admin bahwa invoice termin baru siap dibayar.
+ * Dipanggil HANYA saat baris InvoiceBuild pertama kali dibuat.
+ */
+private function notifyInvoiceBuildCreated(Project $project, InvoiceBuild $invoice): void
+{
+    $event = 'invoice_build_created';
+
+    $cfg = config("project_events.$event");
+
+    if (!$cfg) {
+        throw new \Exception("Config project_events.$event not found");
+    }
+
+    $payloadExtra = [
+        'termin'         => $invoice->termin,
+        'amount'         => number_format($invoice->amount, 0, ',', '.'),
+        'progress_start' => $invoice->progress_start,
+        'progress_end'   => $invoice->progress_end,
+    ];
+
+    // Aksi ini bisa dipicu customer sendiri (klik download invoice untuk
+    // pertama kalinya), jadi auth()->user() TIDAK boleh dipakai sebagai
+    // fallback penerima notifikasi admin — itu akan mengirim notifikasi
+    // ke diri sendiri (si customer).
+    $actorId         = auth()->id();
+    $isCustomerActor = $project->customer?->user_id === $actorId;
+
+    $staffRecipients = collect([
+        $project->employee?->user,
+        $project->createdBy,
+    ])->filter()->unique('id');
+
+    // Kalau proyek belum punya PIC/pembuat yang jelas, jatuhkan ke semua
+    // staf dengan role "Tim" (pola yang sama dipakai di store()).
+    if ($staffRecipients->isEmpty()) {
+        $staffRecipients = User::role('Tim')->get();
+    }
+
+    ProjectNotifier::notifyUsers(
+        $staffRecipients,
+        ProjectNotifier::makePayload($project, [
+            'type'    => $event,
+            'role'    => 'Super-Admin',
+            'title'   => ProjectNotifier::parseMessage($cfg['title'], $payloadExtra),
+            'message' => ProjectNotifier::parseMessage($cfg['message']['Super-Admin'], $payloadExtra),
+            'url'     => route('projects.create', ['project_id' => $project->id]),
+        ]),
+        // Kalau admin sendiri yang men-trigger, jangan kirim notifikasi
+        // ini balik ke dirinya sendiri.
+        exceptUserId: $isCustomerActor ? null : $actorId
+    );
+
+    // Customer hanya diberi tahu kalau BUKAN dia sendiri yang baru saja
+    // men-download (mis. admin yang men-generate invoice-nya).
+    if ($project->customer?->user && ! $isCustomerActor) {
+        ProjectNotifier::notifyUsers(
+            [$project->customer->user],
+            ProjectNotifier::makePayload($project, [
+                'type'    => $event,
+                'role'    => 'Customer',
+                'title'   => ProjectNotifier::parseMessage($cfg['title'], $payloadExtra),
+                'message' => ProjectNotifier::parseMessage($cfg['message']['customer'], $payloadExtra),
+                'url'     => route('projects.create', ['project_id' => $project->id]),
+            ])
+        );
+    }
 }
 
 public function approve(Project $project, InvoiceBuild $invoice)
@@ -207,7 +288,10 @@ public function approve(Project $project, InvoiceBuild $invoice)
         }
     });
 
-    $event = 'invoice_build_created';
+    // Event notifikasi untuk approval, BUKAN 'invoice_build_created' —
+    // event itu untuk saat invoice pertama kali tersedia/bisa didownload,
+    // dan seharusnya dikirim dari tempat invoice itu dibuat, bukan di sini.
+    $event = 'invoice_build_approved';
 
     $cfg = config("project_events.$event");
 
@@ -399,15 +483,18 @@ public function downloadKwitansi(Project $project, InvoiceBuild $invoice)
  
         $number = $invoice->kwitansi_number ?: $this->generateKwitansiNumber();
  
-        $project = $invoice->project()->with('customer.user', 'rab')->first();
+        $project = $invoice->project()->with('customer.user', 'rab', 'buildTermins')->first();
         $offer   = $project->rab;
  
+        $lastTermin = (int) $project->buildTermins->max('termin_no');
+ 
         $pdf = Pdf::loadView('invoice.kwitansi-pdf', [
-            'invoice'    => $invoice,
-            'project'    => $project,
-            'offer'      => $offer,
-            'grandTotal' => $offer->grand_total ?? 0,
-            'number'     => $number,
+            'invoice'        => $invoice,
+            'project'        => $project,
+            'offer'          => $offer,
+            'grandTotal'     => $offer->grand_total ?? 0,
+            'number'         => $number,
+            'isFinalPayment' => (int) $invoice->termin === $lastTermin,
         ]);
  
         $path = 'kwitansi/' . $invoice->id . '.pdf';
@@ -446,6 +533,7 @@ private function generateKwitansiNumber(): string
  
     return sprintf('ZH.K.%s.%02d', $year, $next);
 }
+ 
     private function generateInvoiceNumber(): string
 {
     $year = now()->format('Y');

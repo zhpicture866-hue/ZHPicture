@@ -103,7 +103,9 @@ p {
     <td width="100%" valign="top">
         <p class="bold">
             Diterima Dari
-            <span class="lunas-stamp">LUNAS</span>
+            @if($isFinalPayment)
+                <span class="lunas-stamp">LUNAS</span>
+            @endif
         </p>
         <p>
             <strong>{{ $offer->contact_name }}</strong><br>
