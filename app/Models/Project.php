@@ -241,12 +241,12 @@ protected $casts = [
     'end_date'   => 'datetime',
 ];
 
-public function hasApprovedInvoice(): bool
-{
-    return $this->invoicebuilds()
-        ->where(fn ($q) => $q
-            ->whereNotNull('approved_at')
-            ->orWhereIn('status', [InvoiceBuild::STATUS_APPROVED, InvoiceBuild::STATUS_PAID]))
-        ->exists();
-}
+// public function hasApprovedInvoice(): bool
+// {
+//     return $this->invoicebuilds()
+//         ->where(fn ($q) => $q
+//             ->whereNotNull('approved_at')
+//             ->orWhereIn('status', [InvoiceBuild::STATUS_APPROVED, InvoiceBuild::STATUS_PAID]))
+//         ->exists();
+// }
 }

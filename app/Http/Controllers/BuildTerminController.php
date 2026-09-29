@@ -54,6 +54,9 @@ class BuildTerminController extends Controller
 
 //         'billing_date'   => ['required', 'array', 'size:' . $terminCount],
 //         'billing_date.*' => ['required', 'date'],
+
+//         'bukti_pembayaran'   => ['nullable', 'array'],
+//         'bukti_pembayaran.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'], // 5MB
 //     ]);
 
 //     $percentages  = array_map('floatval', array_values($validated['percentage']));
@@ -70,6 +73,10 @@ class BuildTerminController extends Controller
 
 //     $offerTotal = (float) $project->rab->grand_total;
 
+//     // File di-handle terpisah dari $validated karena UploadedFile
+//     // perlu diproses (disimpan ke storage) satu per satu.
+//     $buktiPembayaranFiles = $request->file('bukti_pembayaran', []);
+
 //     try {
 //         DB::transaction(function () use (
 //             $project,
@@ -77,6 +84,7 @@ class BuildTerminController extends Controller
 //             $percentages,
 //             $billingDates,
 //             $descriptions,
+//             $buktiPembayaranFiles,
 //             $offerTotal
 //         ) {
 
@@ -99,13 +107,20 @@ class BuildTerminController extends Controller
 
 //                 $allocated += $amount;
 
+//                 $buktiPembayaranPath = null;
+//                 if ($request->hasFile("bukti_pembayaran.$index")) {
+//                     $buktiPembayaranPath = $request->file("bukti_pembayaran.$index")
+//                         ->store('build-termin/bukti-pembayaran', 'public');
+//                 }
+
 //                 BuildTermin::create([
-//                     'project_id'   => $project->id,
-//                     'termin_no'    => $index + 1,
-//                     'percentage'   => $percentage,
-//                     'amount'       => $amount,
-//                     'billing_date' => $billingDates[$index],
-//                     'description'  => $descriptions[$index] ?? null,
+//                     'project_id'        => $project->id,
+//                     'termin_no'         => $index + 1,
+//                     'percentage'        => $percentage,
+//                     'amount'            => $amount,
+//                     'billing_date'      => $billingDates[$index],
+//                     'description'       => $descriptions[$index] ?? null,
+//                     'bukti_pembayaran'  => $buktiPembayaranPath,
 //                 ]);
 //             }
 
@@ -299,6 +314,7 @@ public function store(Request $request, $projectId)
         ->route('projects.create', ['project_id' => $project->id])
         ->with('success', 'Setting termin berhasil disimpan.');
 }
+
 public function update(Request $request, $projectId)
 {
     abort_if(
@@ -323,13 +339,6 @@ public function update(Request $request, $projectId)
     if (! $project->buildTermins()->exists()) {
         return back()->withErrors([
             'termin' => 'Setting termin belum tersedia. Simpan setting termin terlebih dahulu.',
-        ]);
-    }
-
-    // Invoice sudah di-approve -> termin dikunci dan tidak boleh diubah.
-    if ($project->hasApprovedInvoice()) {
-        return back()->withErrors([
-            'termin' => 'Setting termin tidak dapat diubah karena invoice sudah di-approve.',
         ]);
     }
 
@@ -381,14 +390,6 @@ public function update(Request $request, $projectId)
             // Kunci baris proyek supaya dua update bersamaan tidak saling menimpa.
             Project::whereKey($project->id)->lockForUpdate()->first();
 
-            // Cek ulang setelah lock: invoice bisa saja di-approve
-            // tepat saat form ini sedang disimpan.
-            if ($project->hasApprovedInvoice()) {
-                throw new \DomainException(
-                    'Setting termin tidak dapat diubah karena invoice sudah di-approve.'
-                );
-            }
-
             // Ganti seluruh termin lama dengan yang baru.
             BuildTermin::where('project_id', $project->id)->delete();
 
@@ -396,10 +397,6 @@ public function update(Request $request, $projectId)
             $allocated = 0;
 
             foreach ($percentages as $index => $percentage) {
-
-                // Termin biasa dibulatkan ke rupiah. Termin terakhir mengambil
-                // sisa, sehingga jumlah semua termin selalu sama dengan
-                // grand_total penawaran (logika sama dengan store()).
                 $amount = $index === $lastIndex
                     ? round($offerTotal - $allocated, 2)
                     : round($offerTotal * ($percentage / 100));
@@ -416,13 +413,6 @@ public function update(Request $request, $projectId)
                 ]);
             }
         });
-
-    } catch (\DomainException $e) {
-
-        // Kasus yang sudah diantisipasi (termin terkunci).
-        return back()->withErrors([
-            'termin' => $e->getMessage(),
-        ]);
 
     } catch (\Throwable $e) {
 

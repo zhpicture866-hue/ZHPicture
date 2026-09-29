@@ -1065,9 +1065,63 @@ input[type=number]::-webkit-outer-spin-button {
     margin:0;
 }
 
-.termin-number {
-    height: 38px;
-    display: flex;
-    align-items: center;
-    font-weight: 500;
-}
+.termin-card {
+        transition: all .2s ease;
+        border: 1px solid #e6e7e9 !important;
+    }
+
+    .termin-card:hover {
+        border-color: #cfd2d6 !important;
+        box-shadow: 0 .25rem .75rem rgba(0,0,0,.06) !important;
+    }
+
+    .termin-number {
+        height: 38px;
+        width: 38px;
+        border-radius: 8px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: #f0f1f3;
+        color: #212529;
+
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .termin-amount-wrapper {
+        position: relative;
+    }
+
+    .termin-amount {
+        background: #f8f9fa;
+        border-color: #e4e6e8;
+        color: #212529;
+    }
+
+    .summary-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .summary-icon {
+        width: 48px;
+        height: 48px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 10px;
+        background: #f1f2f4;
+
+        font-size: 22px;
+    }
+
+    #build-termin-form .form-control:focus {
+        border-color: #9ca3af;
+        box-shadow: 0 0 0 .15rem rgba(0,0,0,.05);
+    }

@@ -13,6 +13,7 @@ use App\Services\InvoiceBuildNumberGenerator;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use DB;
 
 class InvoiceBuildController extends Controller
@@ -393,91 +394,75 @@ public static function autoGenerate(Project $project, $progress)
     }
 
 }
-
-public function invoiceJustek(Project $project)
+public function downloadKwitansi(Project $project, InvoiceBuild $invoice)
 {
-    $invoice = InvoiceBuild::where([
-        'project_id'=>$project->id,
-        'invoice_type'=>'justek'
-    ])->firstOrFail();
-
-    $justekRows = BuildWeeklyProgress::whereHas('item', function ($q) use ($project) {
-            $q->where('project_id', $project->id);
-        })
-        ->where(function ($q) {
-            $q->where('just_tambah', '>', 0)
-              ->orWhere('just_kurang', '>', 0)
-              ->orWhere('just_baru', '>', 0);
-        })
-        ->with('item')
-        ->get();
-    // $justekRows = BuildWeeklyProgress::whereHas('item', function ($q) use ($project) {
-    //     $q->where('project_id', $project->id);
-    // })
-    // ->where(function ($q) {
-    //     $q->where('just_tambah', '>', 0)
-    //       ->orWhere('just_kurang', '>', 0)
-    //       ->orWhere('just_baru', '>', 0);
-    // })
-    // ->with('item')
-    // ->get()
-    // ->groupBy('build_process_item_id');
-
-    $grandTotal = $justekRows->sum(function ($row) {
-        $price = optional($row->item)->price ?? 0;
-
-        return 
-            ($row->just_tambah * $price)
-        + ($row->just_baru * $price)
-        - ($row->just_kurang * $price);
-    });
-
-    return Pdf::loadView('invoice.build-justek', [
-        'invoice'=>$invoice,
-        'project'=>$project,
-        'offer'=>$project->offer,
-        'justekRows'=>$justekRows,
-        'grandTotal'=>$grandTotal
-    ])->stream("Invoice-Justek-{$project->project_name}.pdf");
-}
-public function autoJustek(Project $project)
-{
-    $nilaiJustek = $project->buildItems()
-        ->with('weeklyProgresses')
-        ->get()
-        ->sum(function($item){
-
-            return $item->weeklyProgresses->sum(function($w){
-
-                return ($w->just_tambah ?? 0)
-                     - ($w->just_kurang ?? 0)
-                     + ($w->just_baru ?? 0);
-
-            });
-
-        });
-
-    if($nilaiJustek <= 0){
-        return response()->json(['ok'=>false]);
+    abort_if($invoice->project_id !== $project->id, 404);
+    abort_if($invoice->status !== InvoiceBuild::STATUS_APPROVED, 403);
+ 
+    // Kalau file kwitansi sudah pernah dibuat, kirim yang itu-itu saja.
+    // Dicek dua kali (di luar dan di dalam lock) supaya klik ganda yang
+    // hampir bersamaan tidak membuat dua file dengan nomor berbeda.
+    if ($invoice->kwitansi_path && Storage::disk('local')->exists($invoice->kwitansi_path)) {
+        return $this->streamKwitansi($invoice);
     }
-
-    $exist = InvoiceBuild::where('project_id',$project->id)
-        ->where('invoice_type','justek')
-        ->first();
-
-    if(!$exist){
-
-        InvoiceBuild::create([
-            'project_id'=>$project->id,
-            'invoice_type'=>'justek',
-            'termin'=>0,
-            'nominal'=>$nilaiJustek,
-            'status'=>'draft'
+ 
+    DB::transaction(function () use ($invoice) {
+ 
+        // Kunci baris invoice, lalu baca ulang datanya.
+        $invoice = InvoiceBuild::whereKey($invoice->id)->lockForUpdate()->first();
+ 
+        if ($invoice->kwitansi_path && Storage::disk('local')->exists($invoice->kwitansi_path)) {
+            return;
+        }
+ 
+        $number = $invoice->kwitansi_number ?: $this->generateKwitansiNumber();
+ 
+        $project = $invoice->project()->with('customer.user', 'rab')->first();
+        $offer   = $project->rab;
+ 
+        $pdf = Pdf::loadView('invoice.kwitansi-pdf', [
+            'invoice'    => $invoice,
+            'project'    => $project,
+            'offer'      => $offer,
+            'grandTotal' => $offer->grand_total ?? 0,
+            'number'     => $number,
         ]);
-
-    }
-
-    return response()->json(['ok'=>true]);
+ 
+        $path = 'kwitansi/' . $invoice->id . '.pdf';
+ 
+        Storage::disk('local')->put($path, $pdf->output());
+ 
+        $invoice->update([
+            'kwitansi_number'       => $number,
+            'kwitansi_path'         => $path,
+            'kwitansi_generated_at' => now(),
+        ]);
+    });
+ 
+    return $this->streamKwitansi($invoice->fresh());
+}
+ 
+private function streamKwitansi(InvoiceBuild $invoice)
+{
+    return Storage::disk('local')->response(
+        $invoice->kwitansi_path,
+        'Kwitansi-' . $invoice->kwitansi_number . '.pdf'
+    );
+}
+ 
+private function generateKwitansiNumber(): string
+{
+    $year = now()->format('Y');
+ 
+    $lastNumber = InvoiceBuild::where('kwitansi_number', 'like', "ZH.K.{$year}.%")
+        ->orderByDesc('kwitansi_number')
+        ->value('kwitansi_number');
+ 
+    $next = $lastNumber
+        ? ((int) substr($lastNumber, -2)) + 1
+        : 1;
+ 
+    return sprintf('ZH.K.%s.%02d', $year, $next);
 }
     private function generateInvoiceNumber(): string
 {

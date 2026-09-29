@@ -269,11 +269,6 @@ Route::post('/switch-role', [RoleSwitchController::class, 'switch'])
     ->name('switch.role');
 
 route::resource('/project_types', ProjectTypeController::class);
-route::resource('/product_brands', ProductBrandController::class);
-route::resource('/product_categories', ProductCategoryController::class);
-route::resource('/product_types', ProductTypeController::class);
-
-
 
 Route::middleware(['auth', 'permission:lihat daftar produk|lihat data produk'])->group(function () {
     Route::resource('/products', ProductController::class);
@@ -656,10 +651,8 @@ Route::prefix('projects/{project}')
         '/invoice/{invoicebuild}/bukti-pembayaran',
         [InvoiceBuildController::class, 'uploadBuktiPembayaran']
     )->name('projects.invoice.build.bukti-pembayaran');
-        // Approve invoice build
-        Route::post('/invoice-build-justek-auto',
-    [InvoiceBuildController::class,'autoJustek']
-)->name('projects.invoice.justek.auto');
+  Route::get('/invoice/{invoice}/kwitansi', [InvoiceBuildController::class, 'downloadKwitansi'])
+      ->name('projects.invoice.build.kwitansi');
         Route::post(
             '/invoice/build/{invoice}/approve',
             [InvoiceBuildController::class, 'approve']

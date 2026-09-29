@@ -19,6 +19,13 @@
             </a>
         @endif
 
+        <a href="{{ route('projects.invoice.build.kwitansi', [$project->id, $inv->id]) }}"
+           class="btn btn-dark btn-sm"
+           target="_blank"
+           title="Download Kwitansi">
+            <i class="ti ti-receipt"></i>
+        </a>
+
         <button type="button"
                 class="btn btn-dark btn-sm btn-upload-bukti-pembayaran"
                 data-bs-toggle="modal"

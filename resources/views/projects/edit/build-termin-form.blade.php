@@ -1,9 +1,6 @@
 @php
     $offerTotal = (float) ($project->rab?->grand_total ?? 0);
 
-    // Termin terkunci kalau sudah ada invoice yang di-approve.
-    $isLocked = $project->hasApprovedInvoice();
-
     // Kalau validasi gagal, tampilkan input terakhir user (old()).
     // Kalau tidak, tampilkan termin yang tersimpan di database.
     if (old('percentage') !== null) {
@@ -56,16 +53,6 @@
             </ul>
         </div>
     @endif
-
-    @if ($isLocked)
-        <div class="alert alert-info">
-            Setting termin tidak dapat diubah karena invoice sudah di-approve.
-        </div>
-    @endif
-
-    {{-- Fieldset disabled menonaktifkan semua input, termasuk baris yang
-         dibuat JavaScript, dan input yang disabled tidak ikut terkirim. --}}
-    <fieldset {{ $isLocked ? 'disabled' : '' }}>
 
     @if ($offerTotal <= 0)
         <div class="alert alert-warning">
@@ -305,23 +292,16 @@
         </div>
     </div>
 
-    </fieldset>
+    {{-- <div class="d-flex justify-content-end mt-4 gap-2">
 
-    @unless ($isLocked)
-        <div class="d-flex justify-content-end mt-4 gap-2">
-
-            <button type="submit" class="btn btn-dark" id="btn-update-termin">
-                <i class="ti ti-device-floppy me-1"></i>
-                Simpan Perubahan
-            </button>
-
-            <button type="button" class="btn btn-secondary btn-cancel">
-                <i class="ti ti-x me-1"></i>
-                Batal
-            </button>
-
-        </div>
-    @endunless
+        <button type="submit" class="btn btn-dark" id="btn-update-termin">
+            <i class="ti ti-device-floppy"></i>
+            Simpan Perubahan
+        </button>
+        <button type="button" class="btn btn-secondary btn-cancel">
+            <i class="ti ti-x"></i> Batal
+        </button>
+    </div> --}}
 
 </form>
 
@@ -338,7 +318,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const addButton = document.getElementById('btn-add-edit-termin');
+
+    // Tombol simpan bisa berada di luar <form> (misalnya footer modal).
     const saveButton = document.getElementById('btn-update-termin');
+
     const warningElement = document.getElementById('termin-warning-edit');
     const totalPercentageElement = document.getElementById('total-termin-percentage-edit');
     const totalAmountElement = document.getElementById('total-termin-amount-edit');
@@ -355,10 +338,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return 'Rp ' + new Intl.NumberFormat('id-ID', {
             maximumFractionDigits: 0
         }).format(Math.round(Number(value) || 0));
-    }
-
-    function parseDigits(value) {
-        return Number(String(value || '').replace(/\D/g, '')) || 0;
     }
 
     function getRows() {
@@ -456,8 +435,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         warningElement.classList.toggle('d-none', percentageComplete);
 
-        // Tombol submit tidak selalu ada (mis. saat termin terkunci karena
-        // invoice sudah di-approve), jadi selalu null-check dulu.
         if (saveButton) {
             saveButton.disabled = !percentageComplete || offerTotal <= 0;
         }
@@ -480,10 +457,21 @@ document.addEventListener('DOMContentLoaded', function () {
         f.description.value = data.description ?? '';
         f.billingDate.value = data.billing_date ?? '';
 
-        if (f.percentage.value !== '') {
+        // Nominal yang sudah tersimpan ditampilkan apa adanya (termin terakhir
+        // bisa berisi sisa pembulatan), tidak dihitung ulang dari persentase.
+        const storedAmount = Number(data.amount);
+        const hasStoredAmount =
+            data.amount !== undefined &&
+            data.amount !== null &&
+            data.amount !== '' &&
+            Number.isFinite(storedAmount);
+
+        if (hasStoredAmount && f.percentage.value !== '') {
+            setAmount(row, storedAmount);
+        } else if (f.percentage.value !== '') {
             syncAmountFromPercentage(row);
-        } else if (parseDigits(data.amount) > 0) {
-            f.amountDisplay.value = String(data.amount);
+        } else if (hasStoredAmount && storedAmount > 0) {
+            setAmount(row, storedAmount);
             syncPercentageFromAmount(row);
         }
 

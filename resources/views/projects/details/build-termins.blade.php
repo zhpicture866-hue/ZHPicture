@@ -9,7 +9,7 @@
         <div class="col-md-6">
 
             <label class="form-label text-muted">
-                Total Penawaran Build
+                Total Penawaran Harga
             </label>
 
             <div class="fw-semibold">

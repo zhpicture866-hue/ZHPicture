@@ -48,7 +48,10 @@ class InvoiceBuild extends Model
         'note',
         'nominal',
         'bukti_pembayaran',
-        'bukti_pembayaran_uploaded_at'
+        'bukti_pembayaran_uploaded_at',
+        'kwitansi_number',
+        'kwitansi_path',
+        'kwitansi_generated_at'
     ];
 
         public function project()
