@@ -65,7 +65,9 @@
                 <th class="text-center">
                     Invoice
                 </th>
-
+                <th class="text-center">
+                    Bukti Pembayaran
+                </th>
             </tr>
 
         </thead>
@@ -104,7 +106,12 @@
                             'index'   => $index,
                         ])
                     </td>
-
+                    <td class="text-center">
+                        @include('projects.components.termin-bukti-pembayaran', [
+                            'project' => $project,
+                            'termin'  => $termin,
+                        ])
+                    </td>
                 </tr>
 
             @endforeach

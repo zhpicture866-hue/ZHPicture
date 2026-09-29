@@ -95,10 +95,10 @@ function numberToLetters($num) {
                                 <td class="text-center">
                                     {{ rtrim(rtrim(number_format($item->volume, 5, '.', ''), '0'), '.') }}
                                 </td>
-                                <td class="text-center">
+                                <td class="text-end">
                                     Rp {{ number_format($item->price, 2, ',', '.') }}
                                 </td>
-                                <td class="text-center">
+                                <td class="text-end">
                                     Rp {{ number_format($item->total, 2, ',', '.') }}
                                 </td>
                             </tr>

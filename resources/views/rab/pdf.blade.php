@@ -251,7 +251,7 @@
                     </td>
 
                     <td class="text-center">
-                        {{ $payment->percentage }}%
+                        {{ number_format($payment->percentage, 2) }}%
                     </td>
                 </tr>
             @empty
