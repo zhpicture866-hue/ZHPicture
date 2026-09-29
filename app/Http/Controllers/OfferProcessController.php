@@ -726,7 +726,7 @@ public function update(Request $request, Project $project, OfferProcess $rab) {
             ->back()
             ->with(
                 'success',
-                'RAB berhasil diperbarui.'
+                'Form Penawaran Harga berhasil diperbarui.'
             );
 
     } catch (\Throwable $e) {

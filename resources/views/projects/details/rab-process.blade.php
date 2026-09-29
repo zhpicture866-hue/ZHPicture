@@ -110,17 +110,17 @@ function numberToLetters($num) {
                     <tfoot>
                         <tr>
                             <th colspan="4" class="text-end">SUBTOTAL</th>
-                            <th>Rp {{ number_format($rab->subtotal, 3, ',', '.') }}</th>
+                            <th>Rp {{ number_format($rab->subtotal, 0, ',', '.') }}</th>
                         </tr>
 
                         <tr>
                             <th colspan="4" class="text-end">DISCOUNT</th>
-                            <th>Rp {{ number_format($rab->discount, 3, ',', '.') }}</th>
+                            <th>Rp {{ number_format($rab->discount, 0, ',', '.') }}</th>
                         </tr>
 
                         <tr>
                             <th colspan="4" class="text-end">SUBTOTAL AFTER DISCOUNT</th>
-                            <th>Rp {{ number_format($rab->subtotal_after_discount, 3, ',', '.') }}</th>
+                            <th>Rp {{ number_format($rab->subtotal_after_discount, 0, ',', '.') }}</th>
                         </tr>
 
                         <tr>
@@ -130,18 +130,18 @@ function numberToLetters($num) {
 
                         <tr>
                             <th colspan="4" class="text-end">TOTAL TAX</th>
-                            <th>Rp {{ number_format($rab->tax_total, 2, ',', '.') }}</th>
+                            <th>Rp {{ number_format($rab->tax_total, 0, ',', '.') }}</th>
                         </tr>
 
                         <tr>
                             <th colspan="4" class="text-end">SHIPPING / HANDLING</th>
-                            <th>Rp {{ number_format($rab->shipping, 2, ',', '.') }}</th>
+                            <th>Rp {{ number_format($rab->shipping, 0, ',', '.') }}</th>
                         </tr>
 
                         <tr>
                             <th colspan="4" class="text-end fw-bold">GRAND TOTAL</th>
                             <th class="fw-bold">
-                                Rp {{ number_format($rab->grand_total, 3, ',', '.') }}
+                                Rp {{ number_format($rab->grand_total, 0, ',', '.') }}
                             </th>
                         </tr>
                         <tr>
