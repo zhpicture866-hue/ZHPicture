@@ -9,7 +9,7 @@
         <div class="col-md-6">
 
             <label class="form-label text-muted">
-                Total Penawaran Build
+                Total Penawaran Harga
             </label>
 
             <div class="fw-semibold">
@@ -46,19 +46,19 @@
                     Termin
                 </th>
 
-                <th width="150" class="text-end">
+                <th width="80" class="text-center">
                     Persentase
                 </th>
 
-                <th width="220" class="text-end">
+                <th width="220" class="text-center">
                     Nominal
                 </th>
 
-                <th>
+                <th class="text-center">
                     Keterangan
                 </th>
 
-                <th>
+                <th class="text-center">
                     Tanggal Penagihan
                 </th>
 
@@ -90,11 +90,11 @@
                         Rp {{ number_format($termin->amount, 0, ',', '.') }}
                     </td>
 
-                    <td>
+                    <td class="text-center">
                         {{ $termin->description ?: '-' }}
                     </td>
 
-                    <td>
+                    <td class="text-center">
                         {{ $termin->billing_date->translatedFormat('d F Y') }}
                     </td>
 
@@ -156,7 +156,7 @@
 
                 </th>
 
-                <th colspan="3"></th>
+                <th colspan="4"></th>
 
             </tr>
 

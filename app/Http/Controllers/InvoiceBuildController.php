@@ -51,27 +51,24 @@ public function invoiceBuild(Project $project, int $termin)
             ->orderBy('termin_no')
             ->get();
 
-        $progressStart = 0;
+        // $progressStart = 0;
 
-        foreach ($termins as $item) {
+        // foreach ($termins as $item) {
 
-            if ((int) $item->termin_no === $termin) {
-                break;
-            }
+        //     if ((int) $item->termin_no === $termin) {
+        //         break;
+        //     }
 
-            $progressStart += (float) $item->percentage;
-        }
+        //     $progressStart += (float) $item->percentage;
+        // }
 
-        $progressEnd = $progressStart + $paymentPercentage;
+        // $progressEnd = $progressStart + $paymentPercentage;
 
         $invoice = InvoiceBuild::where('project_id', $project->id)
             ->where('termin', $termin)
             ->lockForUpdate()
             ->first();
 
-        // Dicatat supaya notifikasi "invoice tersedia" hanya dikirim
-        // sekali, saat baris invoice-nya benar-benar baru dibuat —
-        // bukan setiap kali admin klik download/refresh.
         $justCreated = false;
 
         if (!$invoice) {
@@ -82,8 +79,8 @@ public function invoiceBuild(Project $project, int $termin)
                 'invoice_number' => $this->generateInvoiceNumber(),
                 'invoice_date'       => now(),
                 'termin'             => $termin,
-                'progress_start'     => $progressStart,
-                'progress_end'       => $progressEnd,
+                // 'progress_start'     => $progressStart,
+                // 'progress_end'       => $progressEnd,
                 'payment_percentage' => $paymentPercentage,
                 'amount'             => $newAmount,
                 'status'             => 'waiting',
@@ -95,16 +92,16 @@ public function invoiceBuild(Project $project, int $termin)
 
             if (
                 (float) $invoice->amount !== $newAmount ||
-                (float) $invoice->payment_percentage !== $paymentPercentage ||
-                (float) $invoice->progress_start !== $progressStart ||
-                (float) $invoice->progress_end !== $progressEnd
+                (float) $invoice->payment_percentage !== $paymentPercentage
+                // (float) $invoice->progress_start !== $progressStart ||
+                // (float) $invoice->progress_end !== $progressEnd
             ) {
 
                 $invoice->update([
                     'amount'             => $newAmount,
                     'payment_percentage' => $paymentPercentage,
-                    'progress_start'     => $progressStart,
-                    'progress_end'       => $progressEnd,
+                    // 'progress_start'     => $progressStart,
+                    // 'progress_end'       => $progressEnd,
                 ]);
             }
         }
@@ -272,12 +269,6 @@ public function approve(Project $project, InvoiceBuild $invoice)
         $lastTermin = (int) $project->buildTermins()->max('termin_no');
 
         if ($currentTermin === $lastTermin) {
-
-            // Semua termin sudah approved -> proses "Setting Termin"
-            // (yang sekarang memuat invoice & pembayaran) benar-benar selesai.
-            // Update ini idempotent (aman dipanggil berkali-kali), jadi tidak
-            // perlu lock tambahan. Kedua level ditandai sekaligus supaya
-            // getCurrentStep() tidak berhenti di level yang lebih awal.
             $project->levels()
                 ->whereIn('level_name', ['Setting Termin', 'Invoice'])
                 ->where('is_completed', false)
@@ -586,6 +577,12 @@ public function uploadBuktiPembayaran(Request $request, Project $project, Invoic
         'bukti_pembayaran_uploaded_at' => now(),
     ]);
 
-    return back()->with('success', "Bukti pembayaran termin {$invoicebuild->termin} berhasil diunggah.");
+    $buildTermin = $project->buildTermins()
+        ->where('termin_no', $invoicebuild->termin)
+        ->first();
+
+    $terminLabel = $buildTermin->description ?? "Termin {$invoicebuild->termin}";
+
+    return back()->with('success', "Bukti pembayaran {$terminLabel} berhasil diunggah.");
 }
 }

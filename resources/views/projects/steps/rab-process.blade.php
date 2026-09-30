@@ -327,6 +327,54 @@
 
     let rabDescriptionEditor = null;
 
+    // Quill SELALU membungkus bullet maupun angka dengan <ol> yang sama —
+    // bedanya cuma atribut data-list="bullet"/"ordered" di tiap <li>.
+    // Tampilan bulat/angkanya murni dari CSS milik Quill (.ql-editor), jadi
+    // begitu HTML ini dirender di luar editor (tabel preview, PDF, dst)
+    // tanpa CSS itu, browser selalu menampilkannya sebagai angka.
+    //
+    // Fungsi ini mengubahnya jadi <ul>/<ol> standar berdasarkan data-list,
+    // supaya benar dirender di mana saja tanpa perlu CSS khusus Quill.
+    // List campuran (sebagian bullet, sebagian angka berurutan) dipecah
+    // jadi beberapa blok <ul>/<ol> berurutan, sama seperti tampilannya
+    // di editor.
+    function normalizeQuillListsHtml(html) {
+        const container = document.createElement('div');
+        container.innerHTML = html;
+
+        container.querySelectorAll('ol').forEach(function (ol) {
+            const items = Array.from(ol.children).filter(function (el) {
+                return el.tagName === 'LI';
+            });
+
+            if (items.length === 0) {
+                return;
+            }
+
+            let currentList = null;
+            let currentType = null;
+
+            items.forEach(function (li) {
+                const type = li.getAttribute('data-list') || 'ordered';
+                li.removeAttribute('data-list');
+
+                if (type !== currentType) {
+                    currentList = document.createElement(
+                        type === 'bullet' ? 'ul' : 'ol'
+                    );
+                    ol.parentNode.insertBefore(currentList, ol);
+                    currentType = type;
+                }
+
+                currentList.appendChild(li);
+            });
+
+            ol.remove();
+        });
+
+        return container.innerHTML;
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
 
         rabDescriptionEditor = new Quill('#description-editor', {
@@ -1084,74 +1132,6 @@
             : 0;
     }
 
-// function renderRabImportPreview(items) {
-
-//     const container =
-//         document.getElementById('rabImportPreview');
-
-//     if (!items.length) {
-//         container.innerHTML =
-//             '<div class="alert alert-warning">' +
-//             'Tidak ada item yang dapat diimport.' +
-//             '</div>';
-
-//         return;
-//     }
-
-//     let html = `
-//         <div class="mb-2">
-//             <strong>${items.length}</strong>
-//             item siap diimport.
-//         </div>
-
-//         <table class="table table-sm table-bordered align-middle">
-
-//             <thead>
-//                 <tr>
-//                     <th>No</th>
-//                     <th>Lantai</th>
-//                     <th>Kategori</th>
-//                     <th>Tipe Pekerjaan</th>
-//                     <th>Pekerjaan</th>
-//                     <th>Volume</th>
-//                     <th>Satuan</th>
-//                     <th class="text-end">
-//                         Harga Satuan
-//                     </th>
-//                 </tr>
-//             </thead>
-
-//             <tbody>
-//     `;
-
-//     items.forEach((item, index) => {
-
-//         html += `
-//             <tr>
-//                 <td>${index + 1}</td>
-//                 <td>${escapeHtml(item.floor_name)}</td>
-//                 <td>${escapeHtml(item.category_name)}</td>
-//                 <td>${escapeHtml(item.description || '-')}</td>
-//                 <td>${escapeHtml(item.job_name)}</td>
-//                 <td>${item.volume}</td>
-//                 <td>${escapeHtml(item.satuan)}</td>
-//                 <td class="text-end">
-//                     ${formatRupiah(item.base_price)}
-//                 </td>
-//             </tr>
-//         `;
-
-//     });
-
-//     html += `
-//             </tbody>
-
-//         </table>
-//     `;
-
-//     container.innerHTML = html;
-// }
-
     function importRabFromExcel() {
 
         if (!importedRabItems.length) {
@@ -1529,7 +1509,7 @@
     function saveRabItem() {
 
         const description = rabDescriptionEditor
-            ? rabDescriptionEditor.root.innerHTML.trim()
+            ? normalizeQuillListsHtml(rabDescriptionEditor.root.innerHTML.trim())
             : '';
 
         const volumeInput =

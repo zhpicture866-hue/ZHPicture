@@ -442,6 +442,54 @@
     let isLoadingDraft = false;
     let editrabDescriptionEditor = null;
 
+    // Quill SELALU membungkus bullet maupun angka dengan <ol> yang sama —
+    // bedanya cuma atribut data-list="bullet"/"ordered" di tiap <li>.
+    // Tampilan bulat/angkanya murni dari CSS milik Quill (.ql-editor), jadi
+    // begitu HTML ini dirender di luar editor (tabel preview, PDF, dst)
+    // tanpa CSS itu, browser selalu menampilkannya sebagai angka.
+    //
+    // Fungsi ini mengubahnya jadi <ul>/<ol> standar berdasarkan data-list,
+    // supaya benar dirender di mana saja tanpa perlu CSS khusus Quill.
+    // List campuran (sebagian bullet, sebagian angka berurutan) dipecah
+    // jadi beberapa blok <ul>/<ol> berurutan, sama seperti tampilannya
+    // di editor.
+    function normalizeQuillListsHtml(html) {
+        const container = document.createElement('div');
+        container.innerHTML = html;
+
+        container.querySelectorAll('ol').forEach(function (ol) {
+            const items = Array.from(ol.children).filter(function (el) {
+                return el.tagName === 'LI';
+            });
+
+            if (items.length === 0) {
+                return;
+            }
+
+            let currentList = null;
+            let currentType = null;
+
+            items.forEach(function (li) {
+                const type = li.getAttribute('data-list') || 'ordered';
+                li.removeAttribute('data-list');
+
+                if (type !== currentType) {
+                    currentList = document.createElement(
+                        type === 'bullet' ? 'ul' : 'ol'
+                    );
+                    ol.parentNode.insertBefore(currentList, ol);
+                    currentType = type;
+                }
+
+                currentList.appendChild(li);
+            });
+
+            ol.remove();
+        });
+
+        return container.innerHTML;
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
 
         editrabDescriptionEditor = new Quill('#edit-description-editor', {
@@ -464,7 +512,7 @@
         editrabDescriptionEditor.on('text-change', function () {
             const empty = editrabDescriptionEditor.getText().trim().length === 0;
             document.getElementById('rab_item_description_edit').value =
-                empty ? '' : editrabDescriptionEditor.root.innerHTML;
+                empty ? '' : normalizeQuillListsHtml(editrabDescriptionEditor.root.innerHTML);
         });
     const offerDate =
         document.getElementById('offer_date');
@@ -2153,7 +2201,9 @@ function saveEditRabItem() {
     const jobId = modalElement.dataset.jobId;
 
     const isEmpty = editrabDescriptionEditor.getText().trim().length === 0;
-    const description = isEmpty ? '' : editrabDescriptionEditor.root.innerHTML;
+    const description = isEmpty
+        ? ''
+        : normalizeQuillListsHtml(editrabDescriptionEditor.root.innerHTML);
     const volume = parseDecimal(document.getElementById('rab_item_volume_edit').value);
     const basePrice = parseRupiah(document.getElementById('rab_item_price_display_edit').value);
 

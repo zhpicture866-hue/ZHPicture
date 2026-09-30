@@ -146,13 +146,17 @@ p {
 </tr>
 </thead>
 
+@php
+    $buildTermin = $project->buildTermins->firstWhere('termin_no', $invoice->termin);
+    $terminLabel = $buildTermin->description ?? ('Pembayaran Termin ' . $invoice->termin);
+@endphp
+
 <tbody>
 <tr>
    
         <td>
-Pembayaran Termin {{ $invoice->termin }} 
+Pembayaran {{ $terminLabel }}
 Proyek {{ $project->project_name }} 
-Progress Pekerjaan {{ $invoice->progress_start }}% - {{ $invoice->progress_end }}%
         </td>
 
     
@@ -173,7 +177,7 @@ Progress Pekerjaan {{ $invoice->progress_start }}% - {{ $invoice->progress_end }
     @endif
 
     <tr>
-        <th colspan="3" class="text-right bold">TOTAL PEMBAYARAN TAHAP {{ $invoice->termin }}
+        <th colspan="3" class="text-right bold">TOTAL PEMBAYARAN {{ $terminLabel }}
         ({{ $invoice->payment_percentage }}%)</th>
         <th class="text-right bold">
             {{ number_format($invoice->amount,0,',','.') }}
@@ -194,8 +198,12 @@ Progress Pekerjaan {{ $invoice->progress_start }}% - {{ $invoice->progress_end }
 
 @foreach($project->invoicebuilds->sortBy('termin') as $inv)
 
+    @php
+        $buildTermin = $project->buildTermins->firstWhere('termin_no', $inv->termin);
+    @endphp
+
 <li>
-Pembayaran Termin {{ $inv->termin }}
+Pembayaran {{ $buildTermin->description ?? ('Pembayaran Termin ' . $inv->termin) }}
 sebesar {{ $inv->payment_percentage }}%
 x Rp {{ number_format($grandTotal,0,',','.') }}
 =
