@@ -63,13 +63,13 @@
                                             id="activeLicenseId" 
                                             value="{{ $activeLicenseId }}"> --}}
                                         <div class="col-md-4 mb-3">
-                                            <label for="journal_code" class="required">No Transaksi</label>
+                                            <label for="journal_code" class="form-label required">No Transaksi</label>
                                             <input type="text" id="journal_code" name="journal_code" 
                                                 class="form-control" value="{{ $journalCode }}" readonly>
                                         </div>
 
                                         <div class="col-md-4 mb-3">
-                                            <label for="transaction_date" class="required">Tanggal Transaksi</label>
+                                            <label for="transaction_date" class="form-label required">Tanggal Transaksi</label>
                                             <input type="date" name="transaction_date" id="transaction_date" class="form-control" required>
                                             <small id="period-warning" class="text-danger d-none">
                                                 ⚠️ Periode sudah ditutup

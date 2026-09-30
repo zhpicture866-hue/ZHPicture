@@ -58,13 +58,13 @@
                                 @endif --}}
 
                                 <div class="col-md-4 mb-3">
-                                    <label for="journal_code" class="required">No Transaksi</label>
+                                    <label for="journal_code" class="form-label required">No Transaksi</label>
                                     <input type="text" name="journal_code" 
                                         class="form-control" value="{{ old('journal_code', $journal->journal_code) }}" readonly>
                                 </div>
 
                                 <div class="col-md-4 mb-3">
-                                    <label for="transaction_date">Tanggal Transaksi</label>
+                                    <label for="transaction_date" class="form-label required">Tanggal Transaksi</label>
                                     <input type="date" name="transaction_date" class="form-control"
                                         value="{{ old('transaction_date', $journal->transaction_date) }}" required>
                                 </div>
