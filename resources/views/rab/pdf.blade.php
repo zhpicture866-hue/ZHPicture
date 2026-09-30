@@ -28,7 +28,7 @@
 
         .desc p  { margin: 0 0 2px 0; padding: 0; }
         .desc ul, .desc ol { margin: 2px 0 4px 0; padding-left: 14px; }
-        .desc-titled > p:first-child { font-weight: bold; }
+        .desc-titled > p:first-child { font-weight: 400; }
 
         .text-right { text-align: right; }
         .text-center { text-align: center; }
