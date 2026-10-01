@@ -46,14 +46,14 @@
             {{-- Bukti Pembayaran: hanya tersedia setelah invoice di-download --}}
             @if($inv && $inv->downloaded_at)
 
-                @if($inv->bukti_pembayaran)
+                {{-- @if($inv->bukti_pembayaran)
                     <a href="{{ Storage::url($inv->bukti_pembayaran) }}"
                     class="btn btn-outline-dark btn-sm"
                     target="_blank"
                     title="Lihat Bukti Pembayaran">
                         <i class="ti ti-file-check"></i>
                     </a>
-                @endif
+                @endif --}}
 
                 @if(! $inv->approved_at)
                     <button type="button"

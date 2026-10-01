@@ -99,7 +99,8 @@ public function notifications()
         'account_holder',
         'active_role',
         'identity_photo',
-        'email_verified_at'
+        'email_verified_at',
+        'title'
     ];
 
     /**
@@ -169,6 +170,14 @@ public function notifications()
         1 => 'Laki-Laki',
         2 => 'Perempuan',
     ][$this->gender] ?? 'Tidak diketahui';
+    }
+        public function getReadableTitleAttribute()
+    {
+    return [
+        1 => 'Bapak',
+        2 => 'Ibu',
+        3 => 'Kak',
+    ][$this->title] ?? 'Tidak diketahui';
     }
 
 public function setActiveRoleAttribute($value)

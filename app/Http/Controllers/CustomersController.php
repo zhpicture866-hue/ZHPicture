@@ -143,6 +143,7 @@ class CustomersController extends Controller
         'fullname' => 'required|string|max:255',
         'nickname' => 'nullable|string|max:100',
         'gender' => 'nullable|in:1,2',
+        'title' => 'nullable|in:1,2,3',
         'email' => [
             'required',
             'email',
@@ -245,6 +246,7 @@ if ($request->hasFile('photo')) {
                 'password' => Hash::make($password),
                 'phone' => $validated['phone'] ?? null,
                 'gender' => $validated['gender'] ?? null,
+                'title' => $validated['title'] ?? null,
                 'photo' => $validated['photo'] ?? null,
                 'bank_id' => $validated['bank_id'] ?? null,
                 'account_number' => $validated['account_number'] ?? null,
@@ -357,6 +359,7 @@ public function update(Request $request, Customer $customer)
         'fullname' => 'required|string|max:255',
         'nickname' => 'nullable|string|max:100',
         'gender' => 'nullable|in:1,2',
+        'title' => 'nullable|in:1,2,3',
         'email' => [
             'required',
             'email',
@@ -470,6 +473,7 @@ public function update(Request $request, Customer $customer)
             'email' => $validated['email'],
             'phone' => $validated['phone'],
             'gender' => $validated['gender'],
+            'title' => $validated['title'],
             'bank_id' => $validated['bank_id'] ?? null,
             'account_number' => $validated['account_number'] ?? null,
             'account_holder' => $validated['account_holder'] ?? null,

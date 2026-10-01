@@ -389,86 +389,28 @@ public function approve(Project $project, InvoiceBuild $invoice)
         );
 }
 
-public static function autoGenerate(Project $project, $progress)
-{
-
-    $buffer = 10; // 2%
-
-    $terminMap = [
-        1 => 0,
-        2 => 30,
-        3 => 60,
-        4 => 90,
-    ];
-
-    foreach ($terminMap as $termin => $targetProgress) {
-
-        $triggerProgress = max(0, $targetProgress - $buffer);
-
-        if($progress >= $triggerProgress){
-
-            InvoiceBuild::firstOrCreate([
-                'project_id'=>$project->id,
-                'termin'=>$termin
-            ],[
-
-                'invoice_type'=>InvoiceBuild::TYPE_BUILD,
-
-                'invoice_number'=>InvoiceBuildNumberGenerator::generate($termin),
-
-                'invoice_date'=>now(),
-
-                'progress_start'=>$targetProgress,
-
-                'progress_end'=>match($termin){
-                    1=>30,
-                    2=>60,
-                    3=>90,
-                    4=>100
-                },
-
-                'payment_percentage'=>match($termin){
-                    1=>30,
-                    2=>30,
-                    3=>30,
-                    4=>10
-                },
-
-                'amount'=>$project->offer->grand_total * (
-                    match($termin){
-                        1=>0.30,
-                        2=>0.30,
-                        3=>0.30,
-                        4=>0.10
-                    }
-                ),
-
-                'status'=>'waiting'
-            ]);
-
-        }
-
-    }
-
-}
-public function downloadKwitansi(Project $project, InvoiceBuild $invoice)
+public function downloadKwitansi(Project $project, InvoiceBuild $invoice, Request $request)
 {
     abort_if($invoice->project_id !== $project->id, 404);
     abort_if($invoice->status !== InvoiceBuild::STATUS_APPROVED, 403);
  
-    // Kalau file kwitansi sudah pernah dibuat, kirim yang itu-itu saja.
-    // Dicek dua kali (di luar dan di dalam lock) supaya klik ganda yang
-    // hampir bersamaan tidak membuat dua file dengan nomor berbeda.
-    if ($invoice->kwitansi_path && Storage::disk('local')->exists($invoice->kwitansi_path)) {
+    $regenerate = $request->boolean('regenerate')
+        && auth()->user()->hasAnyRole(['Super-Admin', 'Tim Finance']);
+
+    if (! $regenerate
+        && $invoice->kwitansi_path
+        && Storage::disk('local')->exists($invoice->kwitansi_path)) {
         return $this->streamKwitansi($invoice);
     }
  
-    DB::transaction(function () use ($invoice) {
+    DB::transaction(function () use ($invoice, $regenerate) {
  
         // Kunci baris invoice, lalu baca ulang datanya.
         $invoice = InvoiceBuild::whereKey($invoice->id)->lockForUpdate()->first();
  
-        if ($invoice->kwitansi_path && Storage::disk('local')->exists($invoice->kwitansi_path)) {
+        if (! $regenerate
+            && $invoice->kwitansi_path
+            && Storage::disk('local')->exists($invoice->kwitansi_path)) {
             return;
         }
  

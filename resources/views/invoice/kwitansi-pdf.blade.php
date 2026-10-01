@@ -108,7 +108,7 @@ p {
             @endif
         </p>
         <p>
-            <strong>{{ $offer->contact_name }}</strong><br>
+            <strong>{{ optional($project->customer->user)->readable_title }} {{ $offer->contact_name }}</strong><br>
             {{ optional($project->customer->user)->address }}<br>
             Telp: {{ optional($project->customer->user)->phone }}
         </p>
@@ -128,13 +128,15 @@ p {
     <th>Total Diterima (Rp)</th>
 </tr>
 </thead>
-
+@php
+    $buildTermin = $project->buildTermins->firstWhere('termin_no', $invoice->termin);
+    $terminLabel = $buildTermin->description ?? ('Pembayaran Termin ' . $invoice->termin);
+@endphp
 <tbody>
 <tr>
     <td>
-Pembayaran Termin {{ $invoice->termin }}
+Pembayaran {{ $terminLabel }}
 Proyek {{ $project->project_name }}
-Progress Pekerjaan {{ $invoice->progress_start }}% - {{ $invoice->progress_end }}%
     </td>
 
     <td class="text-center">{{ $invoice->payment_percentage }}%</td>
@@ -144,11 +146,18 @@ Progress Pekerjaan {{ $invoice->progress_start }}% - {{ $invoice->progress_end }
 </tbody>
 
 <tfoot>
+    @if(isset($total_price))
     <tr>
-        <th colspan="3" class="text-right bold">
-            TOTAL DITERIMA TAHAP {{ $invoice->termin }}
-            ({{ $invoice->payment_percentage }}%)
+        <th colspan="3" class="text-right">SUBTOTAL</th>
+        <th class="text-right">
+            {{ number_format($offer->total_price,0,',','.') }}
         </th>
+    </tr>
+    @endif
+
+    <tr>
+        <th colspan="3" class="text-right bold">TOTAL PEMBAYARAN {{ $terminLabel }}
+        ({{ $invoice->payment_percentage }}%)</th>
         <th class="text-right bold">
             {{ number_format($invoice->amount,0,',','.') }}
         </th>
@@ -172,8 +181,11 @@ yang telah disetujui pada
 
 <ul>
 @foreach($project->invoicebuilds->sortBy('termin') as $inv)
+    @php
+        $buildTermin = $project->buildTermins->firstWhere('termin_no', $inv->termin);
+    @endphp
 <li>
-Pembayaran Termin {{ $inv->termin }}
+Pembayaran {{ $buildTermin->description ?? ('Pembayaran Termin ' . $inv->termin) }}
 sebesar {{ $inv->payment_percentage }}%
 x Rp {{ number_format($grandTotal,0,',','.') }}
 =
@@ -212,3 +224,5 @@ Rp {{ number_format($inv->amount,0,',','.') }}
 </div>
 </body>
 </html>
+
+{{-- ?regenerate=1 --}}

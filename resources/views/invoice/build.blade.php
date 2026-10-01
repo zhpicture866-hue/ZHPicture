@@ -95,7 +95,7 @@ p {
     <td width="50%" valign="top">
         <p class="bold">Tagihan Kepada</p>
         <p>
-            <strong>{{ $offer->contact_name }}</strong><br>
+            <strong>{{ optional($project->customer->user)->readable_title }} {{ $offer->contact_name }}</strong><br>
             {{ optional($project->customer->user)->address }}<br>
             Telp: {{ optional($project->customer->user)->phone }}
         </p>
