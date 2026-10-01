@@ -15,6 +15,7 @@
             <a href="{{ Storage::url($inv->bukti_pembayaran) }}"
                class="btn btn-outline-dark btn-sm"
                target="_blank"
+               data-bs-tooltip="true"
                title="Lihat Bukti">
                 <i class="ti ti-file-check"></i>
             </a>
@@ -23,6 +24,7 @@
             <a href="{{ route('projects.invoice.build.kwitansi', [$project->id, $inv->id]) }}"
             class="btn btn-dark btn-sm"
             target="_blank"
+            data-bs-toggle="tooltip"
             title="Download Kwitansi">
                 <i class="ti ti-receipt"></i>
             </a>
@@ -30,6 +32,7 @@
             <button type="button"
                     class="btn btn-dark btn-sm btn-upload-bukti-pembayaran"
                     data-bs-toggle="modal"
+                    data-bs-tooltip="true"
                     data-bs-target="#modal-bukti-pembayaran-{{ $inv->id }}"
                     title="{{ $inv->bukti_pembayaran ? 'Ganti Bukti' : 'Upload Bukti' }}">
                 <i class="ti ti-upload"></i>

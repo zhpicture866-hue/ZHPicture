@@ -39,6 +39,7 @@
             <a href="{{ route('projects.invoice.build', ['project' => $project->id, 'termin' => $t]) }}"
             class="btn btn-dark btn-sm"
             target="_blank"
+            data-bs-toggle="tooltip"
             title="{{ $inv && $inv->downloaded_at ? 'Lihat Invoice' : 'Download Invoice Termin' }}">
                 <i class="ti ti-download"></i>
             </a>
@@ -59,6 +60,7 @@
                     <button type="button"
                             class="btn btn-secondary btn-sm"
                             data-bs-toggle="modal"
+                            data-bs-tooltip="true"
                             data-bs-target="#modal-bukti-pembayaran-{{ $inv->id }}"
                             title="{{ $inv->bukti_pembayaran ? 'Ganti Bukti Pembayaran' : 'Upload Bukti Pembayaran' }}">
                         <i class="ti ti-upload"></i>
@@ -115,7 +117,7 @@
                     data-title="Approve Termin {{ $t }}?"
                     data-text="Invoice termin {{ $t }} akan disetujui.">
                     @csrf
-                    <button class="btn btn-success btn-sm" title="Approve Termin {{ $t }}">
+                    <button class="btn btn-success btn-sm" data-bs-toggle="tooltip" title="Approve Termin {{ $t }}">
                         <i class="ti ti-check"></i>
                     </button>
                 </form>

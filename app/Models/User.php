@@ -177,7 +177,7 @@ public function notifications()
         1 => 'Bapak',
         2 => 'Ibu',
         3 => 'Kak',
-    ][$this->title] ?? 'Tidak diketahui';
+    ][$this->title] ?? 'Kak';
     }
 
 public function setActiveRoleAttribute($value)
