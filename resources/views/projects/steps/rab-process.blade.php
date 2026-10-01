@@ -220,7 +220,7 @@
                         </h5>
 
                         <small class="text-muted">
-                            Masukkan produk yang akan ditambahkan ke RAB
+                            Masukkan produk yang akan ditambahkan ke item Penawaran
                         </small>
                     </div>
 
