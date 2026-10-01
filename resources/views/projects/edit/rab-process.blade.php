@@ -101,9 +101,7 @@
                     </tr>
                 </thead>
 
-                <tbody id="rab_offerItemsBody_edit">
-                    {{-- Item RAB dibuat oleh JavaScript --}}
-                </tbody>
+                <tbody id="rab_offerItemsBody_edit"></tbody>
 
                 <tfoot>
 
@@ -224,7 +222,7 @@
 
                     <div>
                         <h5 class="modal-title fw-bold">
-                            Tambah Item RAB
+                            Tambah Item Penawaran
                         </h5>
 
                         <small class="text-muted">
@@ -2170,7 +2168,7 @@ function openEditRabItemModal(jobId = null) {
     const item = isEdit ? rabEditItems[jobId] : null;
 
     if (isEdit && !item) {
-        console.error('Item RAB tidak ditemukan:', jobId);
+        console.error('Item Penawaran tidak ditemukan:', jobId);
         return;
     }
 
@@ -2191,7 +2189,7 @@ function openEditRabItemModal(jobId = null) {
     document.getElementById('edit_rab_item_price').value = numericPrice;
 
     modalElement.querySelector('.modal-title').textContent =
-        isEdit ? 'Edit Item RAB' : 'Tambah Item RAB';
+        isEdit ? 'Edit Item Penawaran' : 'Tambah Item Penawaran';
 
     bootstrap.Modal.getOrCreateInstance(modalElement).show();
 }
