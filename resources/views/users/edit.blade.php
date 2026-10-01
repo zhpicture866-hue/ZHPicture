@@ -61,6 +61,15 @@
                                 <div class="section-block mb-5">
                                     <h3 class="fw-semibold mb-3 border-bottom pb-2">🧍 Informasi Pribadi</h3>
                                     <div class="row g-4">
+                                        <div class="col-md-2">
+                                            <label class="form-label">Title</label>
+                                            <select name="title" class="form-select select2">
+                                                <option value="">-- Pilih --</option>
+                                                <option value="1" {{ old('title', $user->title) == '1' ? 'selected' : '' }}>Bapak</option>
+                                                <option value="2" {{ old('title', $user->title) == '2' ? 'selected' : '' }}>Ibu</option>
+                                                <option value="3" {{ old('title', $user->title) == '3' ? 'selected' : '' }}>Kak</option>
+                                            </select>
+                                        </div>
                                         <div class="col-md-5">
                                             <label class="form-label required" for="fullname">Nama Lengkap:</label>
                                             <input type="text" class="form-control @error('fullname') is-invalid @enderror" name="fullname" value="{{ old('fullname', $user->fullname) }}" required>
@@ -69,7 +78,7 @@
                                             @enderror
                                         </div>
 
-                                        <div class="col-md-5">
+                                        <div class="col-md-3">
                                                 <label class="form-label">Nama Panggilan</label>
                                                 <input type="text" class="form-control @error('nickname') is-invalid @enderror" id="nickname" name="nickname" value="{{ old('nickname', $user->nickname) }}">
                                                 @error('nickname')
