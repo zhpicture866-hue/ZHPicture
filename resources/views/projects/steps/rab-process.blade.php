@@ -115,24 +115,27 @@
                         </th>
                         <th></th>
                     </tr>
-
                     <tr>
                         <th colspan="4" class="text-end">
                             DISCOUNT
                         </th>
 
                         <th>
-                            <input type="text"
-                                class="form-control"
-                                id="rab_discount_display">
+                            <div class="d-flex align-items-center gap-2">
+                                <span>-</span>
+
+                                <input type="text"
+                                    class="form-control"
+                                    id="rab_discount_display_edit">
+                            </div>
 
                             <input type="hidden"
                                 name="discount"
                                 id="rab_discount">
                         </th>
+
                         <th></th>
                     </tr>
-
                     <tr>
                         <th colspan="4" class="text-end">
                             SUBTOTAL AFTER DISCOUNT

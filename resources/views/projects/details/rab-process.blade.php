@@ -115,7 +115,7 @@ function numberToLetters($num) {
 
                         <tr>
                             <th colspan="4" class="text-end">DISCOUNT</th>
-                            <th class="text-end">Rp {{ number_format($rab->discount, 0, ',', '.') }}</th>
+                            <th class="text-end">- Rp {{ number_format($rab->discount, 0, ',', '.') }}</th>
                         </tr>
 
                         <tr>

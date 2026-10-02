@@ -400,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function () {
         f.amountValue.value = String(amount);
 
         f.percentage.value = offerTotal > 0
-            ? ((amount / offerTotal) * 100).toFixed(4)
+            ? ((amount / offerTotal) * 100).toFixed(2)
             : '';
     }
 
@@ -429,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const f = fields(lastRow);
         f.percentage.value = offerTotal > 0
-            ? ((remainder / offerTotal) * 100).toFixed(4)
+            ? ((remainder / offerTotal) * 100).toFixed(2)
             : '';
 
         // true kalau nominal termin-termin lain sudah melebihi total penawaran.
