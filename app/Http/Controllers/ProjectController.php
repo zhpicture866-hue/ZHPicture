@@ -22,85 +22,127 @@ use DB;
 
 class ProjectController extends Controller
 {
+    // public function index(Request $request)
+    // {
+    //     $auth = auth()->user();
+
+    //     $query = Project::with([
+    //         'customer.user:id,fullname',
+    //         'employee.user:id,fullname',
+    //         'affiliator.user:id,fullname',
+    //         'projectType:id,name',
+    //         'levels:id,project_id,level_order,level_name,is_completed',
+    //     ]);
+
+    //     // Batasi data kalau user cuma boleh lihat proyek sendiri
+    //     if (
+    //         $auth->can('lihat data proyek') &&
+    //         !$auth->can('lihat daftar proyek')
+    //     ) {
+    //         $query->where(function ($q) use ($auth) {
+    //             $q->whereHas('customer', fn ($qq) => $qq->where('user_id', $auth->id))
+    //               ->orWhereHas('employee', fn ($qq) => $qq->where('user_id', $auth->id));
+    //         });
+    //     }
+
+    //     if ($request->ajax()) {
+
+    //         return DataTables::of($query)
+    //             ->addIndexColumn()
+    //             ->addColumn('customer', fn ($row) => $row->customer?->user?->fullname ?? '-')
+    //             ->addColumn('employee', fn ($row) => $row->employee?->user?->fullname ?? '-')
+    //             ->addColumn('affiliator', fn ($row) => $row->affiliator?->user?->fullname ?? '-')
+    //             ->addColumn('start_date', fn ($row) => $row->start_date
+    //                 ? Carbon::parse($row->start_date)->format('d/m/Y')
+    //                 : '-')
+    //             ->addColumn('project_type', function ($row) {
+
+    //                 $name = $row->projectType?->name ?? '-';
+
+    //                 return '<span class="badge bg-info">'
+    //                     . e($name) .
+    //                     '</span>';
+    //             })
+    //             ->addColumn('current_level', function ($row) {
+    //                 $current = $row->levels->where('is_completed', false)->sortBy('level_order')->first();
+
+    //                 if (!$current) {
+    //                     return '<span class="badge bg-success">Selesai</span>';
+    //                 }
+
+    //                 $url = route('projects.continue', $row->id);
+    //                 return '<a href="' . $url . '" class="badge bg-primary" style="cursor:pointer;">'
+    //                     . $current->level_name . '</a>';
+    //             })
+    //             ->editColumn('project_name', function ($row) {
+    //                 $url  = route('projects.continue', $row->id);
+    //                 $name = Str::title($row->project_name ?? '-');
+    //                 return '<a href="' . $url . '">' . e($name) . '</a>';
+    //             })
+    //             ->addColumn('action', function ($project) {
+    //                 $buttons = '';
+    //                 if (auth()->user()->can('hapus data proyek')) {
+    //                     $buttons .= '<button data-id="' . $project->id . '"
+    //                                 class="btn btn-icon btn-sm btn-dark delete-projects">
+    //                                 <i class="ti ti-trash"></i></button>';
+    //                 }
+    //                 return $buttons;
+    //             })
+    //             ->rawColumns(['current_level', 'action', 'project_type', 'project_name'])
+    //             ->make(true);
+    //     }
+
+    //     return view('projects.index');
+    // }
     public function index(Request $request)
-    {
-        $auth = auth()->user();
+{
+    $auth = auth()->user();
 
-        $query = Project::with([
-            'customer.user:id,fullname',
-            'employee.user:id,fullname',
-            'affiliator.user:id,fullname',
-            'projectType:id,name',
-            'levels:id,project_id,level_order,level_name,is_completed',
-        ]);
+    $query = Project::with([
+        'customer.user:id,fullname',
+        'employee.user:id,fullname',
+        'affiliator.user:id,fullname',
+        'projectType:id,name',
+        'levels:id,project_id,level_order,level_name,is_completed',
+    ]);
 
-        // Batasi data kalau user cuma boleh lihat proyek sendiri
-        if (
-            $auth->can('lihat data proyek') &&
-            !$auth->can('lihat daftar proyek')
-        ) {
-            $query->where(function ($q) use ($auth) {
-                $q->whereHas('customer', fn ($qq) => $qq->where('user_id', $auth->id))
-                  ->orWhereHas('employee', fn ($qq) => $qq->where('user_id', $auth->id));
-            });
-        }
-
-        if ($request->ajax()) {
-
-            return DataTables::of($query)
-                ->addIndexColumn()
-                ->addColumn('customer', fn ($row) => $row->customer?->user?->fullname ?? '-')
-                ->addColumn('employee', fn ($row) => $row->employee?->user?->fullname ?? '-')
-                ->addColumn('affiliator', fn ($row) => $row->affiliator?->user?->fullname ?? '-')
-                ->addColumn('start_date', fn ($row) => $row->start_date
-                    ? Carbon::parse($row->start_date)->format('d/m/Y')
-                    : '-')
-                ->addColumn('project_type', function ($row) {
-
-                    $name = $row->projectType?->name ?? '-';
-
-                    return '<span class="badge bg-info">'
-                        . e($name) .
-                        '</span>';
-                })
-                ->addColumn('current_level', function ($row) {
-                    $current = $row->levels->where('is_completed', false)->sortBy('level_order')->first();
-
-                    if (!$current) {
-                        return '<span class="badge bg-success">Selesai</span>';
-                    }
-
-                    $url = route('projects.continue', $row->id);
-                    return '<a href="' . $url . '" class="badge bg-primary" style="cursor:pointer;">'
-                        . $current->level_name . '</a>';
-                })
-                ->editColumn('project_name', function ($row) {
-                    $url  = route('projects.continue', $row->id);
-                    $name = Str::title($row->project_name ?? '-');
-                    return '<a href="' . $url . '">' . e($name) . '</a>';
-                })
-                ->addColumn('action', function ($project) {
-                    $buttons = '';
-                    if (auth()->user()->can('hapus data proyek')) {
-                        $buttons .= '<button data-id="' . $project->id . '"
-                                    class="btn btn-icon btn-sm btn-dark delete-projects">
-                                    <i class="ti ti-trash"></i></button>';
-                    }
-                    return $buttons;
-                })
-                ->rawColumns(['current_level', 'action', 'project_type', 'project_name'])
-                ->make(true);
-        }
-
-        return view('projects.index');
+    // Batasi data kalau user cuma boleh lihat proyek sendiri (tetap sama)
+    if ($auth->can('lihat data proyek') && !$auth->can('lihat daftar proyek')) {
+        $query->where(function ($q) use ($auth) {
+            $q->whereHas('customer', fn ($qq) => $qq->where('user_id', $auth->id))
+              ->orWhereHas('employee', fn ($qq) => $qq->where('user_id', $auth->id));
+        });
     }
 
-    /**
-     * Peta level_name -> method resolver data view.
-     * Tambahkan baris baru di sini kalau suatu saat ada project_type dengan
-     * step tambahan (mis. "Survei", "Kontrak") — tidak bergantung urutan angka,
-     * jadi aman walau jumlah/urutan step beda antar project_type.
-     */
+    // Pencarian (menggantikan search bawaan DataTables)
+    if ($request->filled('search')) {
+        $s = $request->search;
+
+        $query->where(function ($q) use ($s) {
+            $q->where('project_name', 'like', "%{$s}%")
+              ->orWhereHas('customer.user', fn ($qq) => $qq->where('fullname', 'like', "%{$s}%"))
+              ->orWhereHas('employee.user', fn ($qq) => $qq->where('fullname', 'like', "%{$s}%"))
+              ->orWhereHas('affiliator.user', fn ($qq) => $qq->where('fullname', 'like', "%{$s}%"));
+        });
+    }
+
+    $projects = $query->orderByDesc('id')->paginate(12)->withQueryString();
+    if ($projects->isEmpty() && $projects->currentPage() > 1) {
+        $projects = $query->orderByDesc('id')
+            ->paginate(12, ['*'], 'page', $projects->lastPage())
+            ->withQueryString();
+    }
+
+    if ($request->ajax()) {
+        return response()->json([
+            'html'       => view('projects._cards', compact('projects'))->render(),
+            'pagination' => $projects->links('pagination::bootstrap-5')->toHtml(),
+            'page'       => $projects->currentPage(),
+        ]);
+    }
+
+    return view('projects.index', compact('projects'));
+}
     private function levelResolvers(): array
     {
         return [

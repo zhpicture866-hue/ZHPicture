@@ -34,39 +34,26 @@
         <div class="container-xl">
             <div class="row row-deck row-cards">
                 <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h2 class="text-center mb-4">
-                                 Daftar Proyek
-                            </h2>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="text-center mb-4">Daftar Proyek</h2>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <input type="search" id="project-search" class="form-control"
+                                placeholder="Cari proyek, customer, karyawan...">
                         </div>
 
-                        <div class="table-responsive">
-                            <table id="tableProjects" class="table card-table table-vcenter text-nowrap">
-                                <thead>
-                                    <tr>
-                                        <th>No</th>
-                                        {{-- <th>Kode Proyek</th> --}}
-                                        <th>Nama Proyek</th>
-                                        <th>Jenis Proyek</th>
-                                        <th>Customer</th>
-                                        <th>Karyawan</th>
-                                        {{-- <th>Affiliator</th> --}}
-                                        <th>Tanggal</th>
-                                        <th>Lokasi</th>
-                                        {{-- <th>Provinsi</th>
-                                        <th>Kabupaten/Kota</th>
-                                        <th>Kecamatan</th>
-                                        <th>Kelurahan</th>
-                                        <th>Kode Pos</th> --}}
-                                        <th>Tahapan</th>
-                                        {{-- <th>Status</th> --}}
-                                        <th>Aksi</th>
-                                    </tr>
-                                </thead>
-                            </table>
+                        <div id="project-list" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+                            @include('projects._cards')
+                        </div>
+
+                        <div id="project-pagination" class="mt-3 d-flex justify-content-center">
+                            {!! $projects->links('pagination::bootstrap-5') !!}
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
         </div>
@@ -97,63 +84,38 @@
 
 @push('js')
     <script>
-        $(function() {
-            const isMobile = window.innerWidth < 576;
-            const table = $('#tableProjects').DataTable({
-                scrollY: '500px',
-                scrollX: true,
-                scrollCollapse: true,
-                fixedColumns: !isMobile ? {
-                    leftColumns: 4
-                } : false,
-                serverSide: true,
-                processing: true,
-                responsive: false,
-                ajax: '{{ route("projects.index") }}',
-                columns: [
-                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                    // { data: 'project_code', name: 'project_code' },
-                    { data: 'project_name', name: 'project_name' },
-                    { data: 'project_type', name: 'project_type' },
-                    { data: 'customer', name: 'customer.user.fullname' },
-                    { data: 'employee', name: 'employee.user.fullname' },
-                    // { data: 'affiliator', name: 'affiliator.user.fullname' },
-                    { data: 'start_date', name: 'start_date' },
-                    { data: 'project_location', name: 'project_location' },
-                    // { data: 'province_name', name: 'province.name' },
-                    // { data: 'city_name', name: 'city.name'},
-                    // { data: 'district_name', name: 'district.name' },
-                    // { data: 'sub_district_name', name: 'sub_district_name' },
-                    // { data: 'postal_code', name: 'postal_code' },
-                    { data: 'current_level', name: 'current_level' },
-                    // { data: 'project_status', name: 'project_status' },
-                    { data: 'action', name: 'action', orderable: false, searchable: false }
-                ],
-                language: {
-                    search: "",
-                    searchPlaceholder: "Cari proyek...",
-                    lengthMenu: "Tampilkan _MENU_ data",
-                    info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
-                    infoEmpty: "Tidak ada data",
-                    infoFiltered: "(difilter dari _MAX_ total data)",
-                    zeroRecords: "Data tidak ditemukan",
-                    paginate: {
-                        first: "Awal",
-                        last: "Akhir",
-                        next: "›",
-                        previous: "‹"
-                    }
-                },
+        let searchTimer;
+        let currentUrl = "{{ route('projects.index') }}";
 
-                initComplete: function () {
-                    const input = $('.dt-search input');
-                    input.removeClass('form-control-sm')
-                        .addClass('form-control');
-                }
-            });
+        function loadProjects(url = currentUrl, search = $('#project-search').val()) {
+            currentUrl = url;
 
-            // Delete user functionally
-            $('table').on('click', '.delete-projects', function () {
+            $('#project-list').css('opacity', .5);
+
+            $.get(url, { search: search })
+                .done(res => {
+                    $('#project-list').html(res.html);
+                    $('#project-pagination').html(res.pagination);
+                })
+                .always(() => $('#project-list').css('opacity', 1));
+        }
+
+        // Cari (debounce 400ms), kembali ke halaman 1
+        $('#project-search').on('input', function () {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(
+                () => loadProjects("{{ route('projects.index') }}", this.value),
+                400
+            );
+        });
+
+        // Klik pagination tanpa reload halaman
+        $(document).on('click', '#project-pagination .pagination a', function (e) {
+            e.preventDefault();
+            loadProjects(this.href);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        $(document).on('click', '.delete-projects', function () {
             const projectId = $(this).data('id');
 
             Swal.fire({
@@ -187,7 +149,7 @@
                                     showConfirmButton: false
                             });
 
-                        table.ajax.reload(null, false); // refresh datatable
+                        loadProjects();
                         } else {
 
                             Swal.fire('Gagal', response.message || 'Tidak bisa menghapus data.', 'error');
@@ -202,10 +164,6 @@
                     });
                 }
             });
-            });
-
-
-           
         });
     </script>
 
@@ -214,7 +172,7 @@
         Swal.fire({
             icon: 'success',
             title: 'Sukses!',
-            text: '{{ session('success') }}',
+            text: @json(session('success')),
             timer: 2000,
             showConfirmButton: false
         });

@@ -35,6 +35,20 @@ header.navbar .d-flex {
     justify-content:flex-end;
     align-items:center;
 }
+.project-card { border-radius: 12px; transition: box-shadow .15s; }
+.project-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+
+.project-title { word-break: break-word; }
+
+.project-meta > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    font-size: 13px;
+}
+.project-meta dt { color: #6c757d; font-weight: 500; }
+.project-meta dd { margin: 0; text-align: right; word-break: break-word; }
 @media (max-width: 1200px){
 
     .mobile-header{
