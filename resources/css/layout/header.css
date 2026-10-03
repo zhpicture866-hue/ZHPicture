@@ -49,6 +49,15 @@ header.navbar .d-flex {
 }
 .project-meta dt { color: #6c757d; font-weight: 500; }
 .project-meta dd { margin: 0; text-align: right; word-break: break-word; }
+
+.cell-ellipsis {
+    display: inline-block;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
 @media (max-width: 1200px){
 
     .mobile-header{
