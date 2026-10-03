@@ -126,7 +126,7 @@
 
                                 <input type="text"
                                     class="form-control"
-                                    id="rab_discount_display_edit">
+                                    id="rab_discount_display">
                             </div>
 
                             <input type="hidden"

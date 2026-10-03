@@ -11,6 +11,7 @@
 /vendor
 /node_modules
 /bower_components
+/file_backup
 
 # =========================================================
 # Laravel
