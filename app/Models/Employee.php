@@ -13,7 +13,7 @@ class Employee extends Model
 {
     use HasFactory, HasUuid, Notifiable;
 
-    protected $table = 'employees';
+    protected $table = 'zhpicture.employees';
     protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false;

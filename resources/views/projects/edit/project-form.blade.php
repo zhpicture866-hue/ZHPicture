@@ -1,4 +1,4 @@
-<div class=n"card shadow-sm border-0 mb-4">
+<div class="card shadow-sm border-0 mb-4">
     <div class="card-body px-5 py-4">
     <h3 class="mb-4 fw-bold">Edit Data Proyek</h3>
         <form id="project-edit-form"
@@ -11,19 +11,14 @@
             <div class="row g-4">
 
                 <div class="col-md-4">
-                    <label class="fw-semibold">Nama Proyek</label>
+                    <label class="form-label">Nama Proyek</label>
                     <input type="text" name="project_name" class="form-control"
                         value="{{ $project->project_name }}">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label required">Jenis Proyek</label>
-                    @php
-                        // Sudah punya level = sudah pernah generateLevels() -> tipe tidak boleh diubah lagi
-                        $isLocked = $project && $project->levels->isNotEmpty();
-                    @endphp
                     <select name="project_type"
                             class="form-select select2 @error('project_type') is-invalid @enderror"
-                            @disabled($isLocked)
                             required>
                         <option value="">-- Pilih --</option>
                         @foreach($projectTypes as $type)
@@ -33,18 +28,13 @@
                             </option>
                         @endforeach
                     </select>
-                    @if($isLocked)
-                        {{-- disabled select tidak ikut ter-submit, jadi kirim value asli lewat hidden input --}}
-                        <input type="hidden" name="project_type" value="{{ $project->project_type }}">
-                        {{-- <small class="text-muted">Jenis proyek tidak bisa diubah setelah proyek dibuat.</small> --}}
-                    @endif
                     @error('project_type')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label required">Tanggal & Waktu Mulai Event</label>
+                    <label class="form-label required">Tanggal Mulai Event</label>
 
                     <input
                         type="text"
@@ -58,7 +48,7 @@
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">Tanggal & Waktu Akhir Event (Estimasi)</label>
+                    <label class="form-label">Tanggal Akhir Event (Estimasi)</label>
 
                     <input
                         type="text"
@@ -87,7 +77,7 @@
                     <textarea name="project_location" class="form-control" rows="3">{{ $project->project_location }}</textarea>
                 </div>
 
-                <div class="row mb-3">
+                <div class="row mb-3 mt-3">
                     <div class="col-md-6">
                         <label class="form-label required">Provinsi</label>
                         <select id="edit_province" name="province_id" class="form-select select2">
@@ -108,7 +98,7 @@
                     </div>
                 </div>
 
-                <div class="row mb-3">
+                <div class="row mb-3 mt-3">
                     <div class="col-md-5">
                         <label class="form-label required">Kecamatan</label>
                             <select id="edit_district" name="district_id" class="form-select select2">

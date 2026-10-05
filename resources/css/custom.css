@@ -1184,12 +1184,4 @@ input[type=number]::-webkit-outer-spin-button {
         min-width: 40px;
         min-height: 40px;
     }
-
-        /* .jurnal-table th:first-child,
-       .jurnal-table td:first-child {
-           position: sticky;
-           left: 0;
-           z-index: 1;
-           background: #fff;
-       } */
 }
