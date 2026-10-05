@@ -171,19 +171,19 @@ class DashboardController extends Controller
         //     ->sortByDesc('progress')
         //     ->take(5)
         //     ->values();
-        $employee = auth()->user()->employee;
+        // $employee = auth()->user()->employee;
 
-        $todayRequest = null;
+        // $todayRequest = null;
 
-        if ($employee) {
-            $todayRequest = AttendanceRequest::where('employee_id', $employee->id)
-                ->whereDate('attendance_date', today())
-                ->latest()
-                ->first();
-        }
-        $attendanceClosed = now()->gte(today()->setTime(10, 0));
+        // if ($employee) {
+        //     $todayRequest = AttendanceRequest::where('employee_id', $employee->id)
+        //         ->whereDate('attendance_date', today())
+        //         ->latest()
+        //         ->first();
+        // }
+        // $attendanceClosed = now()->gte(today()->setTime(10, 0));
         return view('dashboard.index', compact('user', 'incompleteProfile', 'incompleteAffiliator', 'greeting',
-        'cashAccounts', 'attendanceClosed', 'todayRequest', 'totalCashBank',
+        'cashAccounts', 'totalCashBank',
         'cashInThisMonth',
         'cashOutThisMonth','monthlyRevenue'
         ));

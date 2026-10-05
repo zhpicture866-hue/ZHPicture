@@ -85,12 +85,12 @@
 
                                             <thead>
                                                 <tr>
-                                                    <th style="width:22%">Akun</th>
-                                                    <th style="width:22%">Deskripsi</th>
-                                                    <th style="width:18%">User</th>
-                                                    <th style="width:15%">Debit</th>
-                                                    <th style="width:15%">Kredit</th>
-                                                    <th style="width:8%">Aksi</th>
+                                                    <th>Akun</th>
+                                                    <th>Deskripsi</th>
+                                                    <th>User</th>
+                                                    <th>Debit</th>
+                                                    <th>Kredit</th>
+                                                    <th>Aksi</th>
                                                 </tr>
                                             </thead>
 
