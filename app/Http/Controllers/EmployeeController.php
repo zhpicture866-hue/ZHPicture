@@ -117,7 +117,14 @@ class EmployeeController extends Controller
 
     public function store(Request $request)
 {
+    $code = preg_replace('/\D/', '', $request->phone_code ?? '');
+    $num  = ltrim(preg_replace('/\D/', '', $request->phone_number ?? ''), '0');
 
+    if ($code === '62' && str_starts_with($num, '62')) {
+        $num = substr($num, 2);
+    }
+
+    $request->merge(['phone' => $num !== '' ? $code . $num : null]);
     $validated = $request->validate([
         'user_id' => ['nullable','uuid', Rule::exists(User::class,'id')],
         'fullname' => 'required|string|max:255',
@@ -140,7 +147,16 @@ class EmployeeController extends Controller
             Rule::exists(Religion::class, 'id'),
         ],
         'npwp' => 'nullable|string|max:30',
-        'phone' => ['required', 'regex:/^(\+[1-9][0-9]{7,14}|00[1-9][0-9]{7,14}|0?8[0-9]{8,12}|62[0-9]{8,13})$/'],
+        'phone_code' => ['required', Rule::in(array_keys(config('phone_codes')))],
+        'phone' => [
+            'required',
+            'regex:/^[1-9][0-9]{7,14}$/',
+            function ($attr, $value, $fail) use ($code) {
+                if ($code === '62' && !preg_match('/^628[0-9]{8,11}$/', $value)) {
+                    $fail('Nomor Indonesia harus diawali 8 (contoh: 85655xxxxxxx).');
+                }
+            },
+        ],
         'address' => 'nullable|string|max:255',
         'province_id' => [
             'nullable',
@@ -255,6 +271,7 @@ if ($request->hasFile('training_certificate')) {
                 'email_verified_at' => now(),
                 'password' => Hash::make($password),
                 'phone' => $validated['phone'] ?? null,
+                'phone_code' => $validated['phone_code'] ?? null,
                 'gender' => $validated['gender'] ?? null,
                 'photo' => $validated['photo'] ?? null,
                 'bank_id' => $validated['bank_id'] ?? null,
@@ -354,6 +371,14 @@ public function show(Employee $employee)
 
     public function update(Request $request, Employee $employee)
 {
+    $code = preg_replace('/\D/', '', $request->phone_code ?? '');
+    $num  = ltrim(preg_replace('/\D/', '', $request->phone_number ?? ''), '0');
+
+    if ($code === '62' && str_starts_with($num, '62')) {
+        $num = substr($num, 2);
+    }
+
+    $request->merge(['phone' => $num !== '' ? $code . $num : null]);
     $validated = $request->validate([
         // --- data user ---
         'fullname' => 'required|string|max:255',
@@ -361,7 +386,16 @@ public function show(Employee $employee)
         'birth_place' => 'nullable|string|max:255',
         'birth_date' => 'nullable|date',
         'gender' => 'nullable|in:1,2',
-        'phone' => ['nullable', 'regex:/^(\+[1-9][0-9]{7,14}|00[1-9][0-9]{7,14}|0?8[0-9]{8,12}|62[0-9]{8,13})$/'],
+        'phone_code' => ['required', Rule::in(array_keys(config('phone_codes')))],
+        'phone' => [
+            'required',
+            'regex:/^[1-9][0-9]{7,14}$/',
+            function ($attr, $value, $fail) use ($code) {
+                if ($code === '62' && !preg_match('/^628[0-9]{8,11}$/', $value)) {
+                    $fail('Nomor Indonesia harus diawali 8 (contoh: 85655xxxxxxx).');
+                }
+            },
+        ],
         'email' => [
             'required',
             'email',
@@ -444,6 +478,7 @@ public function show(Employee $employee)
         'identity_number' => $validated['identity_number'],
         'gender' => $validated['gender'] ?? null,
         'phone' => $validated['phone'] ?? null,
+        'phone_code' => $validated['phone_code'],
         'address' => $validated['address'] ?? null,
         'religion_id' => $validated['religion_id'],
         'province_id' => $validated['province_id'],

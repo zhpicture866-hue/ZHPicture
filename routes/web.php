@@ -268,14 +268,12 @@ Route::post('/switch-role', [RoleSwitchController::class, 'switch'])
     ->middleware('auth')
     ->name('switch.role');
 
-route::resource('/project_types', ProjectTypeController::class);
-
 Route::middleware(['auth', 'permission:lihat daftar produk|lihat data produk'])->group(function () {
     Route::resource('/products', ProductController::class);
 });
 
-Route::middleware(['auth', 'permission:lihat daftar produk'])->group(function () {
-    Route::resource('/products/catalog', ProductCatalogController::class);
+Route::middleware(['auth', 'permission:lihat jenis proyek'])->group(function () {
+    Route::resource('/project_types', ProjectTypeController::class);
 });
 
 Route::post('/products/generate-sku', [ProductController::class, 'generateSku'])

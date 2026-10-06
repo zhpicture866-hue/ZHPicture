@@ -6,7 +6,7 @@
         <div class="row g-2 align-items-center">
             <div class="col-12 col-md-auto ms-auto d-print-none">
                 <div class="btn-list">
-                {{-- @can('tambah data karyawan')        --}}
+                @can('tambah jenis proyek')       
                 <span class="d-none d-sm-inline">
                     <a href="{{ route("project_types.create") }}" class="btn btn-dark d-none d-sm-inline-block" >
                         <!-- Download SVG icon from http://tabler-icons.io/i/plus -->
@@ -20,7 +20,7 @@
                         Tambah Data Jenis Proyek
                     </a>
                 </span>
-                {{-- @endcan --}}
+                @endcan
                 </div>
             </div>
         </div>
@@ -59,7 +59,7 @@
         </div>
     </div>                        
 </div>
-@can('tambah data jenis')
+@can('tambah jenis proyek')
 <a href="{{ route('project_types.create') }}"
    class="mobile-fab d-md-none">
 
