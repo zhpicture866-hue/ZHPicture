@@ -132,10 +132,9 @@ public function invoiceBuild(Project $project, int $termin)
     ])
     ->setPaper('A4', 'portrait')
     ->stream(
-        "Invoice-Build-Termin-{$termin}-{$project->project_name}.pdf"
+        "{$result['invoice']->invoice_number}-{$project->projectType->name}-{$project->project_name}.pdf"
     );
 }
-
 /**
  * Beri tahu customer & admin bahwa invoice termin baru siap dibayar.
  * Dipanggil HANYA saat baris InvoiceBuild pertama kali dibuat.
@@ -445,9 +444,15 @@ public function downloadKwitansi(Project $project, InvoiceBuild $invoice, Reques
  
 private function streamKwitansi(InvoiceBuild $invoice)
 {
+    $project = $invoice->project;
+
+    $namaFile = "{$invoice->kwitansi_number}-"
+        . "{$project->projectType->name}-"
+        . "{$project->project_name}.pdf";
+
     return Storage::disk('local')->response(
         $invoice->kwitansi_path,
-        'Kwitansi-' . $invoice->kwitansi_number . '.pdf'
+        $namaFile
     );
 }
  
