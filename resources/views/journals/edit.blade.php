@@ -75,12 +75,12 @@
                                 <table class="table table-bordered jurnal-table">
                                     <thead>
                                         <tr>
-                                            <th style="width:20%">Akun</th>
-                                            <th style="width:20%">Deskripsi</th>
-                                            <th style="width:20%">User</th>
-                                            <th style="width:10%">Debit</th>
-                                            <th style="width:10%">Kredit</th>
-                                            <th style="width:5%">Aksi</th>
+                                            <th>Akun</th>
+                                            <th>Deskripsi</th>
+                                            <th>User</th>
+                                            <th>Debit</th>
+                                            <th>Kredit</th>
+                                            <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody id="detail-rows">
@@ -176,7 +176,7 @@
                                             <th colspan="3">Subtotal</th>
                                             <th id="subtotal-debit">{{ $journal->details->sum('debit') }}</th>
                                             <th id="subtotal-credit">{{ $journal->details->sum('credit') }}</th>
-                                            <th colspan="3"></th>
+                                            <th></th>
                                         </tr>
                                     </tfoot>
                                 </table>

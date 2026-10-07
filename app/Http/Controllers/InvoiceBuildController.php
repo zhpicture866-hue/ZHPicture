@@ -208,7 +208,7 @@ private function notifyInvoiceBuildCreated(Project $project, InvoiceBuild $invoi
 public function approve(Project $project, InvoiceBuild $invoice)
 {
     abort_if(
-        ! auth()->user()->hasAnyRole(['Super-Admin', 'Employee']),
+        ! auth()->user()->hasAnyRole(['Super-Admin', 'Direktur', 'Manager Finance']),
         403
     );
     abort_if(

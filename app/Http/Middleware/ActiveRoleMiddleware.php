@@ -25,7 +25,7 @@ class ActiveRoleMiddleware
     //     return $next($request);
     // }
 
-public function handle($request, Closure $next, $roleNames)
+public function handle($request, Closure $next, ...$roleNames)
 {
     if (!auth()->check()) {
         abort(403, 'Unauthorized.');
@@ -42,12 +42,22 @@ public function handle($request, Closure $next, $roleNames)
         return $next($request);
     }
 
+    // 1. Auto-isi active role kalau masih kosong
     if (!$user->activeRole) {
-        abort(403, 'Tidak ada active role yang dipilih.');
+        $first = $user->roles->first();
+
+        if (!$first) {
+            abort(403, 'User tidak memiliki role.');
+        }
+
+        $user->active_role = $first->id;
+        $user->save();
+        $user->load('activeRole');
     }
 
+    // 2. Baru cek kecocokan dengan role yang diizinkan di route
     $allowed = collect($roleNames)
-        ->map(fn($r) => strtolower(trim($r)));
+        ->map(fn ($r) => strtolower(trim($r)));
 
     if (!$allowed->contains(strtolower($user->activeRole->name))) {
         abort(403, 'Role aktif tidak sesuai.');
