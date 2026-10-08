@@ -189,7 +189,7 @@ return [
          * The cache key used to store all permissions.
          */
 
-        'key' => 'spatie.permission.cache',
+        'key' => 'spatie.permission.cache.sistem_a',
 
         /*
          * You may optionally indicate a specific cache driver to use for permission and
