@@ -11,7 +11,7 @@
         .footer { position: fixed; bottom: -90px; left: 0; right: 0; }
         .header img, .footer img { width: 100%; display: block; }
 
-        .content { padding: 20px 50px 0 50px; }
+        .content { padding: 20px 50px 10px 50px; }
         .meta { line-height: 1.4; }
         .section-title { font-weight: bold; font-size: 11px; margin: 28px 0 10px 0; }
 
@@ -40,7 +40,7 @@
         table.summary tr.total td.val { background: #000; color: #fff; font-weight: bold; }
         table.summary tr.total td.lbl { border-bottom: none; }
 
-        .notes { margin-top: 18px; line-height: 1.5; }
+        .notes { margin-top: 12px; line-height: 1.5; }
 
         /* ==== Tambahan untuk Lampiran 2 ==== */
         .page-break { page-break-before: always; }
@@ -61,7 +61,7 @@
 
         .closing { margin-top: 18px; line-height: 1.5; }
 
-        .ttd { margin-top: 24px; }
+        .ttd { margin-top: 12px; page-break-inside: avoid; }
         .ttd img.signature { height: 70px; margin: 6px 0; display: block; }
         .ttd .signer-name { font-weight: bold; text-decoration: underline; }
     </style>
@@ -203,7 +203,12 @@
             <td class="val text-right">{{ $rp($rounded) }}</td>
         </tr>
     </table>
-
+        @if($offer->notes)
+            <div>
+                <h5 class="fw-bold">Keterangan</h5>
+                <div class="notes">{{ $offer->notes }}</div>
+            </div>
+        @endif
 </div>
 
 {{-- ======================= LAMPIRAN 2 ======================= --}}

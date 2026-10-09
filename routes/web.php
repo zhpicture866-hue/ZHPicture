@@ -405,20 +405,10 @@ Route::post('/notifications/read-all', function () {
 
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('consultations/{consultation}/pdf', [\App\Http\Controllers\ConsultationController::class, 'pdf'])
-    ->name('consultations.pdf');
-    Route::get('plannings/{planning}/pdf', [\App\Http\Controllers\PlanningController::class, 'pdf'])
-    ->name('plannings.pdf');
-    Route::get('surveys/{survey}/pdf', [\App\Http\Controllers\SurveyController::class, 'pdf'])
-    ->name('surveys.pdf');
-    Route::get('/projects/offers/{offer}/pdf', [\App\Http\Controllers\OfferController::class, 'printPdf'])
-    ->name('projects.offers.desain.pdf');
-    Route::get('/projects/offer/{offer}/pdf', [\App\Http\Controllers\OfferRABController::class, 'printPdf'])
-    ->name('projects.offers.rab.pdf');
-    Route::get('/projects/{project}/build/pdf', [\App\Http\Controllers\OfferBuildController::class, 'printPdf'])
-    ->name('projects.offers.build.pdf');
-    Route::get('/projects/{project}/rab/pdf', [\App\Http\Controllers\OfferProcessController::class, 'exportPdf'])
-    ->name('projects.rab.pdf');
+
+// routes/web.php
+    Route::get('projects/{project}/rab/pdf/{filename?}', [\App\Http\Controllers\OfferProcessController::class, 'exportPdf'])
+        ->name('projects.rab.pdf');
     Route::get('/tasks/files/{file}', [\App\Http\Controllers\ProjectTaskController::class, 'viewFile'])
     ->name('tasks.files.view');
     Route::post('/tasks/{task}/approve', [\App\Http\Controllers\ProjectTaskController::class, 'approve'])
@@ -641,7 +631,7 @@ Route::prefix('projects/{project}')
     ->group(function () {
 
     Route::get(
-        '/invoice/build/termin/{termin}',
+        '/invoice/build/termin/{termin}/{filename?}',
         [InvoiceBuildController::class, 'invoiceBuild']
     )->name('projects.invoice.build');
 
@@ -649,7 +639,7 @@ Route::prefix('projects/{project}')
         '/invoice/{invoicebuild}/bukti-pembayaran',
         [InvoiceBuildController::class, 'uploadBuktiPembayaran']
     )->name('projects.invoice.build.bukti-pembayaran');
-  Route::get('/invoice/{invoice}/kwitansi', [InvoiceBuildController::class, 'downloadKwitansi'])
+  Route::get('/invoice/{invoice}/kwitansi/{filename?}', [InvoiceBuildController::class, 'downloadKwitansi'])
       ->name('projects.invoice.build.kwitansi');
         Route::post(
             '/invoice/build/{invoice}/approve',

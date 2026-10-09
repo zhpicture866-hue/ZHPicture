@@ -609,8 +609,8 @@
         value = Number(value) || 0;
 
         return 'Rp ' + new Intl.NumberFormat('id-ID', {
-            minimumFractionDigits: 3,
-            maximumFractionDigits: 3
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         }).format(value);
     }
 
@@ -1212,7 +1212,6 @@
                     );
                 }
 
-
                 let categoryLetterIndex = 0;
 
                 Object.entries(categories).forEach(
@@ -1335,7 +1334,7 @@
                                         <input
                                             type="number"
                                             class="form-control vol"
-                                            step="0.00001"
+                                            step="0.01"
                                             value="${volume}"
                                             oninput="rabEditCalculate('${jobId}')"
                                         >
@@ -1599,7 +1598,7 @@
             <td>
                 <input type="number"
                     class="form-control vol"
-                    step="0.00001"
+                    step="0.01"
                     oninput="rabEditCalculate('${jobId}')">
             </td>
 
@@ -2105,7 +2104,7 @@ function buildJobRowHtml(item, jobId, no) {
         </td>
 
         <td>
-            <input type="number" class="form-control vol" step="0.00001"
+            <input type="number" class="form-control vol" step="0.01"
                    value="${Number(item.volume) || 0}"
                    oninput="rabEditCalculate('${jobId}')">
         </td>
