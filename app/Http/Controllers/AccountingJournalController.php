@@ -26,6 +26,7 @@ use DB;
 
 class AccountingJournalController extends Controller
 {
+
     public function index(Request $request)
 {
     if ($request->ajax()) {
@@ -568,11 +569,27 @@ return redirect()
     return view('journals.general', compact('journals', 'startDate', 'endDate', 'totalDebit', 'totalCredit'));
 }
 
-public function exportPDF(Request $request)
+public function exportPDF(Request $request, ?string $filename = null)
 {
     $startDate = $request->start_date ?? now()->startOfMonth()->toDateString();
     $endDate = $request->end_date ?? now()->endOfMonth()->toDateString();
     $activeLicenseId = $request->license_id ?? auth()->user()->license_id;
+
+    $clean = fn ($value) => trim(
+        preg_replace('/[\\\\\/:*?"<>|\x00-\x1F]+/', '-', (string) $value)
+    );
+
+    $newFilename = 'ZHPicture - '
+        . $clean($startDate) . ' to ' . $clean($endDate)
+        . ' - Jurnal Umum.pdf';
+
+    // Arahkan ke URL yang berakhir dengan nama file, query string tetap dibawa
+    if ($filename === null) {
+        return redirect()->route('journals.export.pdf', array_merge(
+            ['filename' => $newFilename],
+            $request->query()
+        ));
+    }
 
     $journals = AccountingJournal::with(['details.account'])
         ->whereBetween('transaction_date', [$startDate, $endDate])
@@ -582,17 +599,15 @@ public function exportPDF(Request $request)
     $totalDebit = $journals->sum(fn($j) => $j->details->sum('debit'));
     $totalCredit = $journals->sum(fn($j) => $j->details->sum('credit'));
 
-    // Load view khusus PDF
-    $pdf = Pdf::loadView('journals.export-pdf', compact(
+    return Pdf::loadView('journals.export-pdf', compact(
         'journals',
         'startDate',
         'endDate',
         'totalDebit',
         'totalCredit'
     ))
-    ->setPaper('a4', 'portrait');
-
-    return $pdf->stream('Jurnal Umum '.$startDate.'_to_'.$endDate.'.pdf');
+    ->setPaper('a4', 'portrait')
+    ->stream($newFilename);
 }
 
 public function ledger(Request $request)
@@ -861,12 +876,28 @@ public function exportTrial(Request $request)
     return $pdf->stream('trial-balance.pdf');
 }
 
-public function print(AccountingJournal $journal)
+public function print(AccountingJournal $journal, ?string $filename = null)
 {
-    $pdf = Pdf::loadView('journals.print', compact('journal'))
-        ->setPaper('a4', 'landscape'); // bisa juga landscape
+    $clean = fn ($value) => trim(
+        preg_replace('/[\\\\\/:*?"<>|\x00-\x1F]+/', '-', (string) $value)
+    );
 
-    return $pdf->stream('Jurnal Harian ' . $journal->journal_code . '.pdf');
+    $newFilename = 'ZHPicture - '
+        . ($clean($journal->journal_code) ?: 'journal')
+        . ' - Jurnal Harian.pdf';
+
+    if ($filename === null) {
+        return redirect()->route('journals.print', [
+            'journal'  => $journal,
+            'filename' => $newFilename,
+        ]);
+    }
+
+    $journal->load('details.account'); // sesuaikan nama relasinya
+
+    return Pdf::loadView('journals.print', compact('journal'))
+        ->setPaper('a4', 'landscape')
+        ->stream($newFilename);
 }
 
 public function balanceSheet(Request $request)

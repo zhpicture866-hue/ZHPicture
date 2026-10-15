@@ -15,6 +15,9 @@
             <form action="{{ route('roles.update', $role->id) }}" method="POST">
                 @csrf
                 @method('PUT')
+                @if ($errors->any())
+                    <div class="alert alert-danger">{{ implode(', ', $errors->all()) }}</div>
+                @endif
                 <div class="row g-4">
                     <div class="col-md">
                         <label for="roleName" class="form-label fw-bold text-secondary">Nama Role</label>

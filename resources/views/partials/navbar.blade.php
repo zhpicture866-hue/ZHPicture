@@ -8,7 +8,7 @@
         </a>
         <nav class="website-menu" id="websiteMenu">
             <a href="/">HOME</a>
-            <a href="#">ARTIKEL</a>
+            <a href="{{ route('artikel.index') }}">ARTIKEL</a>
             <a href="#">PACKAGE</a>
             <div class="menu-dropdown">
                 <button type="button" class="menu-link">

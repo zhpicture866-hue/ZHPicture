@@ -22,6 +22,7 @@ class Role extends SpatieRole
         'name',
         'guard_name',
         'role_group',
+        'external_model'
     ];
 
         public function scopeInternal($query)

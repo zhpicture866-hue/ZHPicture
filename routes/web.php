@@ -46,36 +46,21 @@ use App\Http\Controllers\AjaxController;
 use App\Http\Controllers\Api\JournalApiController;
 use App\Http\Controllers\JournalExportController;
 use App\Http\Controllers\KasController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
+use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\TagController;
 
+Route::get('/', [HomeController::class, 'index'])->name('landing');   // nama 'landing' dipakai banyak view
+Route::get('/artikel', [ArticleController::class, 'index'])->name('artikel.index');
+Route::get('/artikel/{article:slug}', [ArticleController::class, 'show'])->name('articles.show');
+Route::get('/sitemap.xml', [SitemapController::class, 'index']);
 
-Route::get('/', function () {
-    return view('welcome');
+Route::middleware('noindex')->group(function () {
+    require __DIR__.'/auth.php';
 });
 
-require __DIR__.'/auth.php';
-
-// Route::middleware('auth')->group(function () {
-
-//     Route::get('/email/verify', function () {
-//         return view('auth.verify-email');
-//     })->name('verification.notice');
-
-//     Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-
-//         $request->fulfill();
-
-//         return redirect()->route('dashboard');
-
-//     })->middleware('signed')->name('verification.verify');
-
-//     Route::post('/email/verification-notification', function (Request $request) {
-
-//         $request->user()->sendEmailVerificationNotification();
-
-//         return back()->with('success', 'Link verifikasi telah dikirim ulang.');
-
-//     })->middleware('throttle:6,1')->name('verification.send');
-// });
 Route::get('/sso/login', [SsoController::class, 'login'])
     ->name('sso.login');
 
@@ -100,7 +85,15 @@ Route::get('/home', function () {
 Route::middleware(['auth', 'role:Super-Admin'])->group(function () {
     Route::resource('/menus', MenuController::class);
 });
-
+Route::middleware(['auth', 'role:Super-Admin'])->group(function () {
+    Route::resource('articles', AdminArticleController::class)->except('show');
+    Route::delete('categories/bulk', [\App\Http\Controllers\CategoryController::class, 'bulk'])->name('categories.bulk');
+    Route::resource('categories', \App\Http\Controllers\CategoryController::class)->except(['create', 'show']);
+    Route::delete('tags/bulk', [TagController::class, 'bulk'])->name('tags.bulk');
+    Route::resource('tags', TagController::class)->except(['create', 'show']);
+    Route::post('articles/bulk', [AdminArticleController::class, 'bulk'])->name('articles.bulk');
+    Route::post('articles/analyze', [AdminArticleController::class, 'analyze'])->name('articles.analyze');
+});
 Route::get('/customer/profile', [DashboardController::class, 'edit'])->name('customer.profile');
 Route::put('/customer/profile', [DashboardController::class, 'update'])->name('customer.update');
 Route::get('/affiliators/profile', [DashboardController::class, 'edit'])->name('affiliators.profile');
@@ -203,7 +196,8 @@ Route::middleware(['auth', 'permission:lihat akun-akuntansi'])
         ->resource('accounting', AccountingAccountController::class)
          ->parameters(['accounting' => 'account']);
 
-Route::get('/journals/{journal}/print', [AccountingJournalController::class, 'print'])
+Route::get('/journals/{journal}/print/{filename?}', [AccountingJournalController::class, 'print'])
+    ->middleware('permission:lihat jurnal')
     ->name('journals.print');
 
 
@@ -214,7 +208,9 @@ Route::get('/journals/report', [AccountingJournalController::class, 'report'])
 Route::get('/journals/general', [AccountingJournalController::class, 'generalJournal'])
     ->name('journals.general')
     ->middleware(['auth', 'permission:lihat jurnal umum']);
-Route::get('/journals/export/pdf', [AccountingJournalController::class, 'exportPDF'])->name('journals.export.pdf');
+Route::get('/journals/export/pdf/{filename?}', [AccountingJournalController::class, 'exportPDF'])
+    ->middleware(['auth', 'permission:lihat jurnal umum'])
+    ->name('journals.export.pdf');
 
 Route::get('/journals/ledger', [AccountingJournalController::class, 'ledger'])
     ->name('journals.ledger')
