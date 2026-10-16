@@ -80,12 +80,14 @@ class SeoAnalyzer
         };
 
         // Link internal dan keluar
-        $hosts = array_filter([
-            config('app.home_domain'),
+        $hosts = collect([
             parse_url((string) config('app.url'), PHP_URL_HOST),
-            'antosaarchitect.com',
-            'www.antosaarchitect.com',
-        ]);
+            app()->runningInConsole() ? null : request()->getHost(),
+        ])->filter()->flatMap(function ($h) {
+            $bare = preg_replace('/^www\./', '', strtolower($h));
+
+            return [$bare, 'www.' . $bare];
+        })->unique()->values()->all();
         $internal = 0;
         $outbound = 0;
         foreach ($xp->query('//a[@href]') as $n) {

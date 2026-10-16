@@ -297,7 +297,7 @@
                 rgba(0,0,0,0.65),
                 rgba(0,0,0,0.35)
             ),
-            url('{{ asset("hero-mobile.jpeg") }}');
+            url('{{ asset("images/hero-dekstop.jpeg") }}');
         background-size: cover;
         background-repeat: no-repeat;
         background-position: 85% top;
@@ -511,6 +511,43 @@
     .article-more{ margin-top:28px; }
     .btn-article-more{ width:100%; justify-content:center; }
 }
+
+/* ===== Layanan (data dari tabel projects) ===== */
+.service-section{ padding:0 5% 80px; max-width:1500px; margin:auto; }
+.service-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:28px; }
+.service-card{
+    display:flex; flex-direction:column; gap:10px;
+    background:#fff; border-radius:16px; padding:28px;
+    color:inherit; text-decoration:none;
+    box-shadow:0 8px 24px rgba(0,0,0,.08);
+    transition:transform .25s, box-shadow .25s;
+}
+a.service-card:hover{ transform:translateY(-6px); box-shadow:0 16px 36px rgba(0,0,0,.14); color:inherit; }
+.service-card-icon{
+    width:52px; height:52px; border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    background:#fbee47; color:#b7965b; font-size:26px; margin-bottom:6px;
+}
+.service-card-category{
+    font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.5px; color:#b7965b;
+}
+.service-card-title{ margin:0; font-size:19px; font-weight:700; line-height:1.35; color:#111; }
+.service-card-text{
+    margin:0; font-size:14px; line-height:1.6; color:#666;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+}
+.service-card-meta{ display:flex; align-items:center; gap:6px; font-size:13px; color:#888; }
+.service-card-cta{
+    display:flex; align-items:center; gap:4px; margin-top:auto; padding-top:14px;
+    border-top:1px solid #f0f0f0; font-size:13px; font-weight:600; color:#000;
+}
+@media (max-width:1100px){ .service-grid{ grid-template-columns:repeat(2, 1fr); } }
+@media (max-width:768px){
+    .service-section{ padding:0 5% 50px; }
+    .service-grid{ grid-template-columns:1fr; gap:20px; }
+    .service-card{ padding:22px; }
+}
 </style>
 <section class="hero">
     <div id="heroSlider" class="carousel slide carousel-fade" data-bs-ride="carousel">
@@ -563,68 +600,32 @@
         </div> --}}
 </section>
 
-{{-- <section class="event-section">
-    <div class="event-section-header">
-        <h2>Event Terbaru</h2>
-        <p>Ikuti event-event kami yang sedang berlangsung dan akan datang</p>
+@php
+    $projectTypes = collect($projectTypes ?? []);
+    $svcShowName  = collect(['layanan.show'])->first(fn ($r) => Route::has($r));
+@endphp
+@if ($projectTypes->isNotEmpty())
+<section class="event-section" id="layanan" style="padding-bottom:50px">
+    <div class="event-section-header" style="margin-bottom:0">
+        <h2>Layanan</h2>
+        <p>Pilihan layanan fotografi dan videografi untuk setiap momen berhargamu</p>
     </div>
-
-    <div class="event-grid">
-        @forelse ($events as $event)
-            <a href="{{ route('events.show', $event->event_code) }}" class="event-card">
-                <div class="event-card-thumb">
-                    @if ($event->thumbnail)
-                        <img src="{{ asset('storage/' . $event->thumbnail) }}" alt="{{ $event->name }}">
-                    @else
-                        <div class="event-card-thumb-placeholder">
-                            <i class="ti ti-calendar-event"></i>
-                        </div>
-                    @endif
-
-                    <span class="event-card-badge status-{{ Str::slug($event->status_label) }}">
-                        {{ $event->status_label }}
-                    </span>
-                </div>
-
-                <div class="event-card-body">
-                    @if ($event->category)
-                        <span class="event-card-category">{{ $event->category->name }}</span>
-                    @endif
-
-                    <h3 class="event-card-title">{{ $event->name }}</h3>
-
-                    <div class="event-card-meta">
-                        <span>
-                            <i class="ti ti-calendar"></i>
-                            {{ $event->start_at?->translatedFormat('d M Y') }}
-                        </span>
-                        @if ($event->location)
-                            <span>
-                                <i class="ti ti-map-pin"></i>
-                                {{ $event->location }}
-                            </span>
-                        @endif
-                    </div>
-
-                    <div class="event-card-footer">
-                        <span class="event-card-price">
-                            @if ($event->price > 0)
-                                Rp {{ number_format($event->price, 0, ',', '.') }}
-                            @else
-                                Gratis
-                            @endif
-                        </span>
-                        <span class="event-card-cta">
-                            Lihat Detail <i class="ti ti-arrow-right"></i>
-                        </span>
-                    </div>
-                </div>
-            </a>
-        @empty
-            <p class="event-empty">Belum ada event tersedia saat ini.</p>
-        @endforelse
+</section>
+<section class="service-section">
+    <div class="service-grid">
+        @foreach ($projectTypes as $t)
+            @php $txt = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags((string) $t->description))), 130); @endphp
+            <{{ $svcShowName ? 'a' : 'div' }} @if ($svcShowName) href="{{ route($svcShowName, $t->code) }}" @endif class="service-card">
+                <div class="service-card-icon"><i class="ti ti-camera"></i></div>
+                <h3 class="service-card-title">{{ $t->name }}</h3>
+                @if ($txt)<p class="service-card-text">{{ $txt }}</p>@endif
+                @if ($svcShowName)<span class="service-card-cta">Lihat Detail <i class="ti ti-arrow-right"></i></span>@endif
+            </{{ $svcShowName ? 'a' : 'div' }}>
+        @endforeach
     </div>
-</section> --}}
+</section>
+@endif
+
 @php
     $articles = collect($articles ?? []);
     $artIndexUrl = collect(['artikel.index', 'articles.index'])->first(fn ($r) => Route::has($r));

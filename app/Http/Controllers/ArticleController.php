@@ -11,14 +11,20 @@ use Illuminate\Support\Str;
 
 class ArticleController extends Controller
 {
+    private const SITE = 'ZH Picture';
     public function index()
     {
-        $title = 'Tips Seputar Desain Dan Konstruksi Rumah';
+        $title = 'Artikel ZH Picture';
+        $desc  = 'Cerita, tips, dan kabar terbaru dari ZH Picture.';
+
         SEOMeta::setTitle($title, false);
-        SEOMeta::setDescription('Artikel dan wawasan seputar arsitektur dari Antosa Architect.');
+        SEOMeta::setDescription($desc);
         SEOMeta::setCanonical(url()->current());
+        OpenGraph::setTitle($title)->setDescription($desc)->setUrl(url()->current())->setSiteName(self::SITE);
+        TwitterCard::setTitle($title)->setDescription($desc);
 
         $articles = Article::published()->with('categories')->latest('published_at')->paginate(9);
+
         return view('articles.index', compact('articles'));
     }
 
@@ -46,7 +52,7 @@ class ArticleController extends Controller
         }
         $canonical = $article->canonical_url ?: route('articles.show', $article);
 
-        SEOMeta::setTitle($title, false);   // false = jangan tambahkan " - Antosa Architect"
+        SEOMeta::setTitle($title, false); 
         SEOMeta::setDescription($desc);
         SEOMeta::setCanonical($canonical);
         if ($article->noindex) {
@@ -54,12 +60,12 @@ class ArticleController extends Controller
         }
 
         OpenGraph::setTitle($title)->setDescription($desc)->setUrl($canonical)
-            ->setType('article')->setSiteName('Antosa Architect');
+            ->setType('article')->setSiteName('ZH Picture');
         TwitterCard::setTitle($title)->setDescription($desc);
         JsonLd::setType('Article')->setTitle($title)->setDescription($desc)->setUrl($canonical);
         JsonLd::addValue('datePublished', $article->published_at->toIso8601String());
         JsonLd::addValue('dateModified', $article->updated_at->toIso8601String());
-        JsonLd::addValue('author', ['@type' => 'Person', 'name' => $article->author?->name ?? 'Antosa Architect']);
+        JsonLd::addValue('author', ['@type' => 'Person', 'name' => $article->author?->name ?? 'ZH Picture']);
 
         if ($imgUrl) {
             OpenGraph::addImage($imgUrl);

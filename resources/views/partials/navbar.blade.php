@@ -1,3 +1,9 @@
+@php
+    // Daftar layanan untuk dropdown (jenis proyek aktif). Kolom dibatasi agar ringan.
+    $navProjectTypes = \App\Models\ProjectType::where('is_active', true)
+        ->orderBy('name')
+        ->get(['id', 'name', 'code']);
+@endphp
 <header class="website-header">
     <div class="website-navbar">
         <button class="mobile-menu-btn" id="mobileMenuBtn">
@@ -8,9 +14,22 @@
         </a>
         <nav class="website-menu" id="websiteMenu">
             <a href="/">HOME</a>
-            <a href="{{ route('artikel.index') }}">ARTIKEL</a>
-            <a href="#">PACKAGE</a>
             <div class="menu-dropdown">
+                <button type="button" class="menu-link">
+                    LAYANAN
+                    <i class="ti ti-chevron-down"></i>
+                </button>
+                <div class="mega-menu">
+                    @forelse ($navProjectTypes as $type)
+                        <a href="{{ route('layanan.show', $type->code) }}">{{ $type->name }}</a>
+                    @empty
+                        <span class="mega-menu-empty">Belum ada layanan tersedia</span>
+                    @endforelse
+                </div>
+            </div>
+            <a href="{{ route('artikel.index') }}">PORTOFOLIO</a>
+            {{-- <a href="#">PACKAGE</a> --}}
+            {{-- <div class="menu-dropdown">
                 <button type="button" class="menu-link">
                     PORTOFOLIO
                     <i class="ti ti-chevron-down"></i>
@@ -23,7 +42,7 @@
                     <a href="#">Branding</a>
                     <a href="#">Collaboration</a>
                 </div>
-            </div>
+            </div> --}}
             <a href="{{ route('register') }}">BERGABUNG</a>
             <a href="#">TENTANG KAMI</a>
         </nav>
@@ -273,7 +292,14 @@
     background:#bbbdbf;
 
 }
-/* Tablet */
+/* Dropdown kosong */
+.mega-menu-empty{
+    display:block;
+    padding:18px 28px;
+    color:#888;
+    font-size:14px;
+}
+
 /* Tablet */
 @media (min-width: 769px) and (max-width: 1200px) {
 
@@ -545,6 +571,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 .classList.toggle("open");
         });
 
+    });
+
+    // tutup dropdown layanan saat klik di luar menu
+    document.addEventListener("click", function (e) {
+        document.querySelectorAll(".menu-dropdown.open").forEach(item => {
+            if (!item.contains(e.target)) item.classList.remove("open");
+        });
     });
 
     const userBtn = document.getElementById("userBtn");

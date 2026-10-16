@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
-use App\Models\Event;
+use App\Models\ProjectType;
 use App\Support\OgImage;
 use Artesaos\SEOTools\Facades\JsonLd;
 use Artesaos\SEOTools\Facades\OpenGraph;
@@ -16,19 +16,10 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $events = null;
-
-        // Pengaman: kalau model/tabel belum ada di server, homepage tetap tampil
-        // memakai data contoh (tidak error 500).
-        if (class_exists(Event::class) && Schema::hasTable('events')) {
-            $data = Event::published()
-                ->with('category')
-                ->orderByRaw('CASE WHEN end_at < ? THEN 1 ELSE 0 END', [now()])
-                ->orderBy('start_at')
-                ->limit(6)
-                ->get();
-            $events = $data->isNotEmpty() ? $data : null;
-        }
+$projectTypes = ProjectType::query()
+    ->where('is_active', true)
+    ->orderBy('name')          // atau orderBy('id') jika ingin urutan input
+    ->get(['id', 'name', 'code', 'description']);
 
         // PERBAIKAN: hanya artikel yang sudah terbit (sebelumnya draft ikut tampil di beranda)
         $articles = (class_exists(Article::class) && Schema::hasTable((new Article)->getTable()))
@@ -37,8 +28,8 @@ class HomeController extends Controller
                 ->take(12)
                 ->get()
             : collect();
-        JsonLd::setType('WebSite')->setTitle('Ruang Kembali')->setUrl(url('/'));
-        return view('welcome', ['events' => $events, 'articles' => $articles]);
+        JsonLd::setType('WebSite')->setTitle('ZH Picture')->setUrl(url('/'));
+        return view('welcome', compact('projectTypes', 'articles'));
     }
 
     public function show(string $slug)
@@ -64,7 +55,7 @@ class HomeController extends Controller
         $rawDesc = (string) $event->deskripsi;
         $desc    = trim(preg_replace('/\s+/', ' ', strip_tags(str_replace('<', ' <', $rawDesc))));
         if ($desc === '') {
-            $desc = $title . ($location ? " di {$location}" : '') . '. Hubungi Antosa Architect untuk informasi lengkap.';
+            $desc = $title . ($location ? " di {$location}" : '') . '. Hubungi ZH Picture untuk informasi lengkap.';
         }
         $desc = Str::limit($desc, 160);
 
@@ -75,7 +66,7 @@ class HomeController extends Controller
         SEOMeta::setCanonical($url);
 
         OpenGraph::setTitle($title)->setDescription($desc)->setUrl($url)
-            ->setType('website')->setSiteName('Antosa Architect');
+            ->setType('website')->setSiteName('ZH Picture');
         TwitterCard::setTitle($title)->setDescription($desc);
         JsonLd::setType('WebPage')->setTitle($title)->setDescription($desc)->setUrl($url);
 

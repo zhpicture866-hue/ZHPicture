@@ -39,7 +39,7 @@ use App\Http\Controllers\RabController;
 use App\Http\Controllers\JobCategoryController;
 use App\Http\Controllers\InvoiceBuildController;
 use App\Http\Controllers\BuildProcessItemController;
-use App\Http\Controllers\BuildDailyController;
+use App\Http\Controllers\LayananController;
 use App\Http\Controllers\BuildWeeklyController;
 use App\Http\Controllers\BuildWeeklyPlanController;
 use App\Http\Controllers\AjaxController;
@@ -56,7 +56,9 @@ Route::get('/', [HomeController::class, 'index'])->name('landing');   // nama 'l
 Route::get('/artikel', [ArticleController::class, 'index'])->name('artikel.index');
 Route::get('/artikel/{article:slug}', [ArticleController::class, 'show'])->name('articles.show');
 Route::get('/sitemap.xml', [SitemapController::class, 'index']);
-
+Route::get('/layanan/{code}', [LayananController::class, 'show'])
+    ->where('code', '[A-Za-z0-9\-_]+')
+    ->name('layanan.show');
 Route::middleware('noindex')->group(function () {
     require __DIR__.'/auth.php';
 });
