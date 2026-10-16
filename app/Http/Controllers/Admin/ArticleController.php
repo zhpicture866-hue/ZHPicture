@@ -123,7 +123,7 @@ class ArticleController extends Controller
             'featured_image'   => 'nullable|image|max:2048',
             'og_image'         => 'nullable|image|max:2048',
             'categories'   => 'nullable|array',
-            'categories.*' => 'exists:categories,id',
+            'categories.*' => ['integer', Rule::exists(Category::class, 'id')],
             'tags'         => 'nullable|string|max:500',
             'cta_title'  => 'nullable|string|max:120',
             'cta_text'   => 'nullable|string|max:300',
@@ -225,8 +225,12 @@ class ArticleController extends Controller
         $article->categories()->sync($request->input('categories', []));
 
         $tagIds = collect(explode(',', (string) $request->input('tags')))
-            ->map(fn ($t) => trim($t))->filter()->unique()
-            ->map(fn ($name) => Tag::firstOrCreate(['slug' => Str::slug($name)], ['name' => $name])->id);
+            ->map(fn ($t) => trim($t))->filter()
+            ->map(fn ($name) => [$name, Str::slug($name)])
+            ->filter(fn ($p) => $p[1] !== '')
+            ->unique(fn ($p) => $p[1])
+            ->map(fn ($p) => Tag::firstOrCreate(['slug' => $p[1]], ['name' => $p[0]])->id)
+            ->values();
 
         $article->tags()->sync($tagIds);
         $regenerate = $request->hasFile('featured_image') || $request->hasFile('og_image') || ! $article->og_auto;
