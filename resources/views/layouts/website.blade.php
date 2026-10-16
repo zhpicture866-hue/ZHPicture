@@ -7,7 +7,8 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>ZH Picture</title>
+    {!! SEO::generate() !!}
+    <meta name="google-site-verification" content="e4YF0F1zI3CD9H2wxrw2h3NkOihfsRCVuKVegJUsrqQ" />
     <!-- sesuaikan dengan brand guidelines -->
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
 
