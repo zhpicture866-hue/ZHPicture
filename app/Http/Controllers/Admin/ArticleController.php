@@ -147,13 +147,13 @@ class ArticleController extends Controller
     private function handleFiles(Request $request, array $data, ?Article $article = null): array
     {
         foreach (['featured_image', 'og_image'] as $field) {
-            if ($article?->$field) {
-                Storage::disk('public')->delete($article->$field);
-            }
             if ($request->hasFile($field)) {
+                if ($article?->$field) {
+                    Storage::disk('public')->delete($article->$field);
+                }
                 $data[$field] = $request->file($field)->store('articles', 'public');
             } else {
-                unset($data[$field]); // jangan timpa gambar lama dengan null
+                unset($data[$field]); // pertahankan gambar lama
             }
         }
         return $data;

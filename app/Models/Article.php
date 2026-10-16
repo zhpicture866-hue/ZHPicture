@@ -37,12 +37,12 @@ class Article extends Model
 
         public function categories()
     {
-        return $this->belongsToMany(Category::class, 'article_category');
+        return $this->belongsToMany(Category::class, 'zhpicture.article_category');
     }
 
     public function tags()
     {
-        return $this->belongsToMany(Tag::class, 'article_tag');
+        return $this->belongsToMany(Tag::class, 'zhpicture.article_tag');
     }
 
 public function renderedContent(): string

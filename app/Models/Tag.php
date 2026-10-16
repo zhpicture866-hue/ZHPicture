@@ -25,6 +25,6 @@ class Tag extends Model
 
     public function articles()
     {
-        return $this->belongsToMany(Article::class, 'article_tag');
+        return $this->belongsToMany(Article::class, 'zhpicture.article_tag');
     }
 }
