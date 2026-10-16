@@ -21,7 +21,7 @@
 .svc-hero-body{ position:relative; z-index:2; padding:40px; color:#fff; }
 .svc-hero-icon{
     width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center;
-    background:#b7965b; color:#fff; font-size:28px; margin-bottom:16px;
+    background:#fbee47; color:#000; font-size:28px; margin-bottom:16px;
 }
 .svc-hero h1{ margin:0; font-size:clamp(28px,4vw,42px); font-weight:700; line-height:1.2; color:#fff; }
 
@@ -38,18 +38,18 @@
 .svc-cta p{ font-size:14px; color:#666; line-height:1.6; margin:0 0 18px; }
 .svc-btn{
     display:flex; align-items:center; justify-content:center; gap:8px; height:46px; border-radius:12px;
-    background:#1f1a12; color:#fff; font-weight:600; font-size:14px; text-decoration:none; transition:.25s;
+    background:#fbee47; color:#000; font-weight:600; font-size:14px; text-decoration:none; transition:.25s;
 }
 .svc-btn:hover{ background:#332a1d; color:#fff; }
-.svc-btn.wa{ background:#b7965b; }
-.svc-btn.wa:hover{ background:#9c7d47; }
+.svc-btn.wa{ background:#fbee47; }
+.svc-btn.wa:hover{ background:#58595b; }
 
 .svc-other{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:4px; }
 .svc-other a{
     display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px;
-    border-radius:10px; color:#333; text-decoration:none; font-size:14px; font-weight:500;
+    border-radius:10px; color:#000; text-decoration:none; font-size:14px; font-weight:500;
 }
-.svc-other a:hover{ background:#f4ecda; color:#8a6d36; }
+.svc-other a:hover{ background:#58595b; color:#fff; }
 
 .svc-proj{ margin-top:44px; scroll-margin-top:120px; }
 .svc-proj-head{ margin-bottom:22px; }
