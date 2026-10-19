@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
 {
-    $this->call(ProjectTypeSeeder::class);
+    $this->call(AccountingPeriodSeeder::class);
 }
 
 }

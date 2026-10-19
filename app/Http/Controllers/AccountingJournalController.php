@@ -684,27 +684,40 @@ private function getLedgerData($startDate, $endDate)
     return [$ledger];
 }
 
-public function exportLedgerPdf(Request $request)
+public function exportLedgerPdf(Request $request, ?string $filename = null)
 {
     $startDate = $request->get('start_date');
     $endDate   = $request->get('end_date');
 
-    $user = auth()->user();
+    $clean = fn ($value) => trim(
+        preg_replace('/[\\\\\/:*?"<>|\x00-\x1F]+/', '-', (string) $value)
+    );
 
-    // 🔹 Ambil data ledger sesuai filter
+    // Kalau tanggal kosong, nama file tidak menjadi "ZHPicture -  to  - Buku Besar"
+    $period = ($startDate && $endDate)
+        ? $clean($startDate) . ' to ' . $clean($endDate)
+        : 'Semua Periode';
+
+    $newFilename = 'ZHPicture - ' . $period . ' - Buku Besar.pdf';
+
+    if ($filename === null) {
+        return redirect()->route('ledgerpdf', array_merge(
+            ['filename' => $newFilename],
+            $request->query()
+        ));
+    }
+
     [$ledger] = $this->getLedgerData(
         $startDate,
         $endDate,
     );
 
-    // 🔹 Load view PDF
-    $pdf = Pdf::loadView('journals.ledgerpdf', compact(
+    return Pdf::loadView('journals.ledgerpdf', compact(
         'ledger', 'startDate', 'endDate'
-    ))->setPaper('a4', 'portrait');
-
-    return $pdf->stream('Buku Besar '.$startDate.'_to_'.$endDate.'.pdf');
+    ))
+    ->setPaper('a4', 'portrait')
+    ->stream($newFilename);
 }
-
 public function trialBalance(Request $request)
 {
     $user = auth()->user();
@@ -819,17 +832,16 @@ private function getTrialBalanceAccounts($startDate, $endDate)
 
     });
 }
-public function exportTrial(Request $request)
+public function exportTrial(Request $request, ?string $filename = null)
 {
     $user = auth()->user();
 
     $startDate = $request->start_date ?? now()->startOfMonth()->toDateString();
     $endDate   = $request->end_date ?? now()->endOfMonth()->toDateString();
 
-    // 🔹 Filter lisensi sesuai role → sama seperti trialBalance()
+    // 🔹 Cek akses dulu, sebelum redirect
     if ($user->can('tambah jurnal')) {
 
-        // Boleh melihat semua parent account
         $parentAccounts = AccountingAccount::where('is_parent', true)
             ->orderBy('account_code')
             ->get();
@@ -842,38 +854,44 @@ public function exportTrial(Request $request)
             abort(403, 'Silakan pilih lisensi aktif.');
         }
 
-        // Hanya parent account milik lisensi aktif
         $parentAccounts = AccountingAccount::where('is_parent', true)
             ->where('license_id', $activeLicenseId)
             ->orderBy('account_code')
             ->get();
 
     } else {
-
         abort(403, 'Tidak memiliki akses.');
-
     }
 
-//    $activeLicenseId = $request->get('license_id') ?? session('active_license_id');
+    $clean = fn ($value) => trim(
+        preg_replace('/[\\\\\/:*?"<>|\x00-\x1F]+/', '-', (string) $value)
+    );
 
-    // 🔹 Ambil data yang sama seperti di view trial balance
+    $newFilename = 'ZHPicture - '
+        . $clean($startDate) . ' to ' . $clean($endDate)
+        . ' - Neraca Saldo.pdf';
+
+    // 🔹 Arahkan ke URL yang berakhir dengan nama file, query string ikut dibawa
+    if ($filename === null) {
+        return redirect()->route('journals.trial.pdf', array_merge(
+            ['filename' => $newFilename],
+            $request->query()
+        ));
+    }
+
     $groupedAccounts = $this->getTrialBalanceAccounts($startDate, $endDate);
-  
+
     $totalDebit  = collect($groupedAccounts)->sum(fn($cat) => collect($cat)->sum(fn($sub) => $sub['subtotalDebit']));
     $totalCredit = collect($groupedAccounts)->sum(fn($cat) => collect($cat)->sum(fn($sub) => $sub['subtotalCredit']));
 
-    // 🔹 Generate PDF
-    $pdf = Pdf::loadView('journals.trialbalance-pdf', [
+    return Pdf::loadView('journals.trialbalance-pdf', [
         'groupedAccounts' => $groupedAccounts,
         'startDate'       => $startDate,
         'endDate'         => $endDate,
-        'licenses'        => $licenses,
         'totalDebit'      => $totalDebit,
         'totalCredit'     => $totalCredit,
         'request'         => $request,
-    ]);
-
-    return $pdf->stream('trial-balance.pdf');
+    ])->stream($newFilename);
 }
 
 public function print(AccountingJournal $journal, ?string $filename = null)
