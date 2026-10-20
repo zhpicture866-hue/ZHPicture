@@ -36,6 +36,13 @@
 
         table th:nth-child(6),
         table td:nth-child(6) { width: 12.5%; text-align: right; } /* Kredit */
+        table tfoot td {
+            font-weight: bold;
+        }
+
+        table tfoot td:first-child {
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -78,9 +85,13 @@
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="4"><strong>Total</strong></td>
-                <td><strong>Rp. {{ number_format($totalDebit, 2, ',', '.') }}</strong></td>
-                <td><strong>Rp. {{ number_format($totalCredit, 2, ',', '.') }}</strong></td>
+                <td colspan="4">Total</td>
+                <td>
+                    Rp {{ number_format($totalDebit, 2, ',', '.') }}
+                </td>
+                <td>
+                    Rp {{ number_format($totalCredit, 2, ',', '.') }}
+                </td>
             </tr>
         </tfoot>
     </table>

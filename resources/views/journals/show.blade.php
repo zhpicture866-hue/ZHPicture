@@ -106,10 +106,10 @@
                                             </td>
                                             <td>{{ $detail->person_name ?? '-' }}</td>
                                             <td class="text-end text-success">
-                                                Rp {{ number_format($detail->debit, 0, ',', '.') }}
+                                                Rp {{ number_format($detail->debit, 2, ',', '.') }}
                                             </td>
                                             <td class="text-end text-danger">
-                                                Rp {{ number_format($detail->credit, 0, ',', '.') }}
+                                                Rp {{ number_format($detail->credit, 2, ',', '.') }}
                                             </td>
                                         </tr>
                                     @endforeach
@@ -119,10 +119,10 @@
                                     <tr>
                                         <td colspan="4">Total</td>
                                         <td class="text-end text-success">
-                                            Rp {{ number_format($totalDebit, 0, ',', '.') }}
+                                            Rp {{ number_format($totalDebit, 2, ',', '.') }}
                                         </td>
                                         <td class="text-end text-danger">
-                                            Rp {{ number_format($totalCredit, 0, ',', '.') }}
+                                            Rp {{ number_format($totalCredit, 2, ',', '.') }}
                                         </td>
                                     </tr>
                                 </tfoot>
