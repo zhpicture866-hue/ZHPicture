@@ -204,7 +204,7 @@
 
                                     </div>
                                     @php
-                                        $isBalanced = $journal->details->sum('debit') == $journal->details->sum('credit');
+                                        $isBalanced = round($journal->details->sum('debit'), 2) === round($journal->details->sum('credit'), 2);
                                     @endphp
                                     <div id="balance-status" 
                                         class="mt-2 fw-bold {{ $isBalanced ? 'text-success' : 'text-danger' }}">
@@ -363,9 +363,10 @@ $(document).ready(function () {
     }
 
     loadAccounts();
-    $('#add-row').click(function () {
+        let rowIndex = $('#detail-rows tr').length;
 
-        const rowCount = $('#detail-rows tr').length;
+        $('#add-row').click(function () {
+            const rowCount = rowIndex++;
 
         const newRow = `
             <tr class="jurnal-row">
@@ -480,16 +481,28 @@ $(document).ready(function () {
         }
     });
     function formatRupiah(value) {
+        // hanya angka dan koma
+        value = String(value).replace(/[^\d,]/g, '');
 
-        value = value.replace(/[^\d]/g, '');
+        const parts = value.split(',');
 
-        return new Intl.NumberFormat('id-ID').format(value);
+        // bagian bulat: hapus nol di depan, lalu beri titik ribuan
+        let intPart = parts[0].replace(/^0+(?=\d)/, '');
+        intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+        // bagian desimal maksimal 2 digit (sesuai numeric(18,2))
+        if (parts.length > 1) {
+            return intPart + ',' + parts.slice(1).join('').substring(0, 2);
+        }
+
+        return intPart;
     }
 
     function parseRupiah(value) {
-
         return parseFloat(
-            String(value).replace(/\./g, '')
+            String(value)
+                .replace(/\./g, '')   // hapus titik ribuan
+                .replace(',', '.')    // koma desimal -> titik
         ) || 0;
     }
 
@@ -498,14 +511,15 @@ $(document).ready(function () {
         let totalCredit = 0;
 
         $('#detail-rows tr').each(function () {
-            totalDebit += parseRupiah($(this).find('.debit-input').val());
+            totalDebit  += parseRupiah($(this).find('.debit-input').val());
             totalCredit += parseRupiah($(this).find('.credit-input').val());
         });
 
-        $('#subtotal-debit').text(totalDebit.toLocaleString('id-ID'));
-        $('#subtotal-credit').text(totalCredit.toLocaleString('id-ID'));
+        const fmt = { minimumFractionDigits: 0, maximumFractionDigits: 2 };
+        $('#subtotal-debit').text(totalDebit.toLocaleString('id-ID', fmt));
+        $('#subtotal-credit').text(totalCredit.toLocaleString('id-ID', fmt));
 
-        const isBalanced = totalDebit === totalCredit;
+        const isBalanced = Math.round(totalDebit * 100) === Math.round(totalCredit * 100);
 
         $('#balance-status')
             .text(isBalanced ? '✅ Seimbang' : '❌ Tidak Seimbang')
@@ -515,9 +529,7 @@ $(document).ready(function () {
 
     $(document).on('input', '.debit-input, .credit-input', function () {
 
-        let raw = $(this).val().replace(/[^\d]/g, '');
-
-        $(this).val(formatRupiah(raw));
+        $(this).val(formatRupiah($(this).val()));
 
         if ($(this).hasClass('debit-input')) {
             $(this).closest('tr').find('.credit-input').val('');
@@ -545,12 +557,9 @@ $(document).ready(function () {
         });
 
         // Validasi balance
-        if (totalDebit !== totalCredit) {
-
+        if (Math.round(totalDebit * 100) !== Math.round(totalCredit * 100)) {
             e.preventDefault();
-
             alert('Transaksi tidak seimbang!');
-
             return false;
         }
 

@@ -569,7 +569,7 @@ return redirect()
     return view('journals.general', compact('journals', 'startDate', 'endDate', 'totalDebit', 'totalCredit'));
 }
 
-public function exportPDF(Request $request, ?string $filename = null)
+    public function exportPDF(Request $request, ?string $filename = null)
 {
     $startDate = $request->start_date ?? now()->startOfMonth()->toDateString();
     $endDate = $request->end_date ?? now()->endOfMonth()->toDateString();

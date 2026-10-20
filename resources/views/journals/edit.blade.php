@@ -116,46 +116,28 @@
                                                                 data-selected-label="{{ $detail->person_name ?? '' }}">
                                                             <option value="">-- Pilih User --</option>
                                                         </select>
-                                                            @php
-                                                                if ($detail->person_type === 'team') {
-                                                                    $users = $teams;
-                                                                } elseif ($detail->person_type === 'member') {
-                                                                    $users = $members;
-                                                                } elseif ($detail->person_type === 'mitra') {
-                                                                    $users = $partners;
-                                                                } else {
-                                                                    $users = collect();
-                                                                }
-                                                            @endphp
-                                                            @foreach ($users as $u)
-                                                                <option value="{{ $u->id }}" {{ $u->id == $detail->person ? 'selected' : '' }}>
-                                                                    {{ $u->fullname }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
                                                     </td>
                                                     
                                                     <td data-label="Debit">
                                                         <input type="text"
-                                                            name="details[{{ $i }}][debit]" 
-                                                            class="form-control debit-input" 
+                                                            name="details[{{ $i }}][debit]"
+                                                            class="form-control debit-input"
                                                             value="{{ old("details.$i.debit", $detail->debit) }}"
-                                                            {{ $detail->credit ? 'disabled' : '' }}>
+                                                            {{ (float) $detail->credit > 0 ? 'disabled' : '' }}>
 
-                                                        @if($detail->credit)
+                                                        @if((float) $detail->credit > 0)
                                                             <input type="hidden" name="details[{{ $i }}][debit]" value="{{ $detail->debit }}">
                                                         @endif
                                                     </td>
 
-                                                    
                                                     <td data-label="Kredit">
-                                                        <input type="text" 
-                                                            name="details[{{ $i }}][credit]" 
-                                                            class="form-control credit-input" 
+                                                        <input type="text"
+                                                            name="details[{{ $i }}][credit]"
+                                                            class="form-control credit-input"
                                                             value="{{ old("details.$i.credit", $detail->credit) }}"
-                                                            {{ $detail->debit ? 'disabled' : '' }}>
+                                                            {{ (float) $detail->debit > 0 ? 'disabled' : '' }}>
 
-                                                        @if($detail->debit)
+                                                        @if((float) $detail->debit > 0)
                                                             <input type="hidden" name="details[{{ $i }}][credit]" value="{{ $detail->credit }}">
                                                         @endif
                                                     </td>
@@ -174,15 +156,15 @@
                                         </tr>
                                         <tr class="jurnal-subtotal-row">
                                             <th colspan="3">Subtotal</th>
-                                            <th id="subtotal-debit">{{ $journal->details->sum('debit') }}</th>
-                                            <th id="subtotal-credit">{{ $journal->details->sum('credit') }}</th>
+                                            <th id="subtotal-debit">{{ number_format($journal->details->sum('debit'), 2, ',', '.') }}</th>
+                                            <th id="subtotal-credit">{{ number_format($journal->details->sum('credit'), 2, ',', '.') }}</th>
                                             <th></th>
                                         </tr>
                                     </tfoot>
                                 </table>
                             </div>
                             @php
-                                $isBalanced = $journal->details->sum('debit') == $journal->details->sum('credit');
+                                $isBalanced = round($journal->details->sum('debit'), 2) === round($journal->details->sum('credit'), 2);
                             @endphp
 
                             <div id="balance-status" 
@@ -471,8 +453,10 @@ $(document).ready(function () {
         applyDebitCreditRule($row, accountCode);
     });
 
-    $('#add-row').click(function () {
-        const rowCount = $('#detail-rows tr').length;
+        let rowIndex = $('#detail-rows tr').length;
+
+        $('#add-row').click(function () {
+            const rowCount = rowIndex++;
 
         const newRow = `
             <tr class="jurnal-row">
@@ -508,44 +492,59 @@ $(document).ready(function () {
         $(this).closest('tr').remove();
         calculateSubtotals();
     });
+    // untuk input yang sedang diketik user (format Indonesia: 1.500,50)
     function formatRupiah(value) {
+        value = String(value).replace(/[^\d,]/g, '');
+        const parts = value.split(',');
 
-        value = value.replace(/[^\d]/g, '');
+        let intPart = parts[0].replace(/^0+(?=\d)/, '');
+        intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-        return new Intl.NumberFormat('id-ID').format(value);
+        if (parts.length > 1) {
+            return intPart + ',' + parts.slice(1).join('').substring(0, 2);
+        }
+        return intPart;
+    }
+
+    // untuk nilai dari database (format: 1500.50)
+    function formatFromDb(value) {
+        const num = parseFloat(value);
+        if (!num) return '';
+        return num.toLocaleString('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        });
     }
 
     function parseRupiah(value) {
-
         return parseFloat(
-            String(value).replace(/\./g, '')
+            String(value).replace(/\./g, '').replace(',', '.')
         ) || 0;
     }
     function calculateSubtotals() {
         let totalDebit = 0, totalCredit = 0;
 
-        $('#detail-rows tr').each(function() {
-            totalDebit  += parseRupiah($(this).find('.debit-input').val()) || 0;
-            totalCredit += parseRupiah($(this).find('.credit-input').val()) || 0;
+        $('#detail-rows tr').each(function () {
+            totalDebit  += parseRupiah($(this).find('.debit-input').val());
+            totalCredit += parseRupiah($(this).find('.credit-input').val());
         });
 
-        $('#subtotal-debit').text(totalDebit.toLocaleString('id-ID'));
-        $('#subtotal-credit').text(totalCredit.toLocaleString('id-ID'));
+        const fmt = { minimumFractionDigits: 0, maximumFractionDigits: 2 };
+        $('#subtotal-debit').text(totalDebit.toLocaleString('id-ID', fmt));
+        $('#subtotal-credit').text(totalCredit.toLocaleString('id-ID', fmt));
 
-        if (totalDebit === totalCredit && totalDebit > 0) {
-            $('#balance-status').text('✅ Seimbang').css('color', 'green');
-        } else {
-            $('#balance-status').text('❌ Tidak Seimbang').css('color', 'red');
-        }
+        const isBalanced = Math.round(totalDebit * 100) === Math.round(totalCredit * 100)
+                        && totalDebit > 0;
+
+        $('#balance-status')
+            .text(isBalanced ? '✅ Seimbang' : '❌ Tidak Seimbang')
+            .css('color', isBalanced ? 'green' : 'red');
     }
 
     $(document).on('input', '.debit-input, .credit-input', function () {
+        const $row = $(this).closest('tr');
 
-        let $row = $(this).closest('tr');
-
-        let raw = $(this).val().replace(/[^\d]/g, '');
-
-        $(this).val(formatRupiah(raw));
+        $(this).val(formatRupiah($(this).val()));
 
         if ($(this).hasClass('debit-input')) {
             $row.find('.credit-input').val('');
@@ -557,48 +556,29 @@ $(document).ready(function () {
     });
 
     $('form').on('submit', function (e) {
-
-        let totalDebit = 0;
-        let totalCredit = 0;
+        let totalDebit = 0, totalCredit = 0;
 
         $('#detail-rows tr').each(function () {
             syncHiddenInput($(this));
-
-            totalDebit += parseRupiah(
-                $(this).find('.debit-input').val()
-            );
-
-            totalCredit += parseRupiah(
-                $(this).find('.credit-input').val()
-            );
+            totalDebit  += parseRupiah($(this).find('.debit-input').val());
+            totalCredit += parseRupiah($(this).find('.credit-input').val());
         });
 
-        if (totalDebit !== totalCredit) {
-
+        if (Math.round(totalDebit * 100) !== Math.round(totalCredit * 100)) {
             e.preventDefault();
-
             alert('Transaksi tidak seimbang!');
-
             return false;
         }
 
-        $('.debit-input, .credit-input').each(function () {
-
-            let numeric = parseRupiah($(this).val());
-
-            $(this).val(numeric);
+        $('.debit-input, .credit-input, .hidden-debit, .hidden-credit').each(function () {
+            $(this).val(parseRupiah($(this).val()));
         });
     });
 
     loadAccounts();
 
     $('.debit-input, .credit-input').each(function () {
-
-        let value = $(this).val();
-
-        if (value) {
-            $(this).val(formatRupiah(value));
-        }
+        $(this).val(formatFromDb($(this).val()));
     });
 
     calculateSubtotals();
