@@ -14,7 +14,7 @@
 
     <input type="hidden" name="project_id" value="{{ $project->id }}">
 
-    <h4 class="fw-bold mb-3">Informasi Pembuatan Rab</h4>
+    <h4 class="fw-bold mb-3">Informasi Pembuatan Penawaran</h4>
 
     <div class="row g-3">
         <div class="col-md-4">
