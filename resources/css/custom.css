@@ -919,22 +919,85 @@ tr.row-uraian td.sticky-col{
     z-index: 11;
     background: #fff;
 }
-.table-real {
-    max-height: 75vh; /* atau nilai lain sesuai kebutuhan */
-    overflow-y: auto;
-    overflow-x: auto;
+#rabItemsTable {
+    min-width: 930px;
+    table-layout: fixed;
+    margin-bottom: 0;
 }
-.table-plan {
-    max-height: 75vh; /* atau nilai lain sesuai kebutuhan */
-    overflow-y: auto;
-    overflow-x: auto;
-    max-width: 100%;
+
+#rabItemsTable .rab-description-preview {
+    white-space: normal !important;
+    word-break: break-word;
+}
+#editrabItemsTable {
+    min-width: 930px;
+    table-layout: fixed;
+    margin-bottom: 0;
+}
+#editrabItemsTable .rab-description-preview {
+    white-space: normal !important;
+    word-break: break-word;
+}
+/* Header Rincian Pekerjaan: judul kiri, tombol kanan (semua device) */
+.rab-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     width: 100%;
-    background: transparent;
-    display: block;
+    flex: 0 0 100%;      /* parent-nya .row, jadi harus selebar baris */
 }
-.table-plan::after {
-    display: none;
+
+.rab-detail-header h4 {
+    margin: 0;
+}
+
+.rab-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+@media (max-width: 767.98px) {
+    /* Jarak antar field di bagian atas form */
+    .rab-form-top > [class*="col-"],
+    #rabForm .row.mb-3 > [class*="col-"] {
+        margin-bottom: 12px;
+    }
+    #rabForm .form-label { margin-bottom: 6px; }
+    #rabForm .form-control,
+    #rabForm .form-select { min-height: 42px; }
+    .rab-detail-header h4 { font-size: 16px; }
+    .rab-action-buttons .btn { min-height: 40px; }
+
+}
+@media (max-width: 575.98px) {
+    #addRabItemModal .modal-dialog {
+        margin: 12px;
+        max-width: calc(100% - 24px);
+    }
+    #addRabItemModal .modal-header { padding: 16px 16px 8px; }
+    #addRabItemModal .modal-body   { padding: 8px 16px; }
+    #addRabItemModal .modal-footer {
+        padding: 12px 16px 16px;
+        gap: 8px;
+    }
+    #addRabItemModal .modal-footer .btn { flex: 1; min-height: 42px; }
+
+    #addRabItemModal .ql-editor { min-height: 110px; }
+    
+    #editRabItemModal .modal-dialog {
+        margin: 12px;
+        max-width: calc(100% - 24px);
+    }
+    #editRabItemModal .modal-header { padding: 16px 16px 8px; }
+    #editRabItemModal .modal-body   { padding: 8px 16px; }
+    #editRabItemModal .modal-footer {
+        padding: 12px 16px 16px;
+        gap: 8px;
+    }
+    #editRabItemModal .modal-footer .btn { flex: 1; min-height: 42px; }
+    #editRabItemModal .ql-editor { min-height: 110px; }
 }
 
 

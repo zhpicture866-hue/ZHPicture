@@ -35,6 +35,11 @@ th, td {
 .no-border td {
     border: none;
     padding: 0px 0;
+    word-wrap: break-word;
+}
+/* kolom dengan lebar tetap, tidak digeser oleh isi (alamat panjang) */
+.layout {
+    table-layout: fixed;
 }
 
 th {
@@ -61,7 +66,7 @@ p {
 
 <div style="height:20px;"></div>
 
-<table width="100%" class="no-border" style="margin-top:15px;">
+<table width="100%" class="no-border layout" style="margin-top:15px;">
 <tr>
     <!-- KIRI -->
     <td width="60%" valign="top">
@@ -89,38 +94,37 @@ p {
 
 
 
-<table width="100%" class="no-border" style="margin-top:15px;">
+<table width="100%" class="no-border layout" style="margin-top:15px;">
 <tr>
     <!-- KIRI -->
-    <td width="50%" valign="top">
+    <td width="50%" valign="top" style="padding-right:25px;">
         <p class="bold">Tagihan Kepada</p>
-        <p>
+        <p style="word-wrap:break-word;">
             <strong>{{ optional($project->customer->user)->readable_title }} {{ $offer->contact_name }}</strong><br>
             {{ optional($project->customer->user)->address }}<br>
             Telp: {{ optional($project->customer->user)->phone }}
         </p>
-
     </td>
 
     <!-- KANAN -->
-    <td width="50%" valign="top">
+    <td width="50%" valign="top" style="padding-left:25px;">
         <p class="bold">Informasi Pembayaran</p>
-        <table class="no-border">
+        <table class="no-border layout">
             <tr>
-                <td width="45%">Metode pembayaran</td>
-                <td>: Cash / Transfer</td>
+                <td width="45%" valign="top">Metode pembayaran</td>
+                <td width="55%" valign="top">: Cash / Transfer</td>
             </tr>
             <tr>
-                <td>Nama Bank</td>
-                <td>: Bank Mandiri</td>
+                <td valign="top">Nama Bank</td>
+                <td valign="top">: Bank Mandiri</td>
             </tr>
             <tr>
-                <td>No. Rekening</td>
-                <td>: 141 001 378 428 5</td>
+                <td valign="top">No. Rekening</td>
+                <td valign="top">: 141 001 378 428 5</td>
             </tr>
             <tr>
-                <td>Atas Nama</td>
-                <td>: Achmad Zulkifli Nur Rochim</td>
+                <td valign="top">Atas Nama</td>
+                <td valign="top">: Achmad Zulkifli Nur Rochim</td>
             </tr>
             <tr>
                 <td colspan="2">
@@ -167,7 +171,7 @@ Proyek {{ $project->project_name }}
 </tbody>
 
 <tfoot>
-    @if(isset($total_price))
+    @if(isset($offer->total_price))
     <tr>
         <th colspan="3" class="text-right">SUBTOTAL</th>
         <th class="text-right">
