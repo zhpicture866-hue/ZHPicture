@@ -621,7 +621,7 @@ z-index: 1035;
 .btn-sm
 .btn-list {
     font-family: 'Montserrat', sans-serif;
-    font-weight: 400 !important;
+    font-weight: 500 !important;
   font-size: 12px !important;
 }
 .btn-link {
@@ -733,7 +733,7 @@ z-index: 1035;
 .btn-warning{
     background:#fbee47 !important;
     border-color:#fbee47 !important;
-    color:#111 !important;
+    color:#000 !important;
 }
 
 .btn-warning:hover{

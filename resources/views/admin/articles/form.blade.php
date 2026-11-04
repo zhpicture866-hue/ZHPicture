@@ -104,7 +104,7 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Deskripsi</label>
-                                        <textarea name="cta_text" rows="2" maxlength="300" class="form-control">{{ old('cta_text', $article->cta_text ?? 'Gratis konsultasi untuk segala kebutuhan rumah dan bangunan Anda, hubungi kami dengan klik tombol berikut ini') }}</textarea>
+                                        <textarea name="cta_text" rows="2" maxlength="300" class="form-control">{{ old('cta_text', $article->cta_text ?? 'Gratis konsultasi untuk segala wedding Anda, hubungi kami dengan klik tombol berikut ini') }}</textarea>
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md-5">
@@ -350,7 +350,7 @@
                                     <div class="small fw-semibold mb-2">Tag yang sering dipakai</div>
                                     <div id="tag-popular" class="d-flex flex-wrap gap-1">
                                         @foreach($popularTags as $t)
-                                            <button type="button" class="btn btn-sm btn-outline-secondary tag-chip"
+                                            <button type="button" class="btn btn-sm btn-warning tag-chip"
                                                     data-name="{{ $t->name }}"
                                                     title="{{ $t->articles_count }} artikel">{{ $t->name }}</button>
                                         @endforeach
