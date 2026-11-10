@@ -24,86 +24,98 @@ use Illuminate\Http\JsonResponse;
 
 class CustomersController extends Controller
 {
-    public function index(Request $request)
-    {
-        $auth = auth()->user();
 
-        $query = Customer::with(['user.roles']);
-
-        if ($auth->can('lihat data customer') && !$auth->can('lihat daftar customer')) {
-            $query->where('user_id', $auth->id);
-        }
-
-        if ($request->ajax()) {
-            $customers = $query->get();
-
-        return DataTables::of($customers)
-                ->addIndexColumn()
-                ->addColumn('fullname', function ($row) {
-                    return optional($row->user)->fullname ?? '-';
-                })
-                ->addColumn('email', function ($row) {
-                    return $row->user->email ?? '-';
-                })
-                ->addColumn('category', fn($row) => $this->readableCategory($row->category))
-                // ->addColumn('loyalty', fn($row) => $this->readableLoyaltyLevel($row->loyalty_level))
-                ->editColumn('fullname', function ($row) {
-                    $url = route('customers.show', $row->id);
-                    $name = Str::title($row->user->fullname ?? '-');
-                    return '<a href="'.$url.'">'.e($name).'</a>';
-                })
-                // ->addColumn('loyalty', function ($row) {
-                //     $level = ucfirst($row->readable_loyalty_level);
-                //     $color = match ($row->readable_loyalty_level) {
-                //         '1' => 'secondary',
-                //         '2' => 'warning',
-                //         '3' => 'info',
-                //         '4' => 'success',
-                //         '5' => 'dark',
-                //         default => 'secondary',
-                //     };
-                //     return '<span class="badge bg-' . $color . '">' . $level . '</span>';
-                // })
-                ->addColumn('loyalty', function ($row) {
-
-                    $color = match ($row->readable_loyalty_level) {
-                        '1' => 'secondary',
-                        '2' => 'warning',
-                        '3' => 'info',
-                        '4' => 'success',
-                        '5' => 'dark',
-                        default => 'secondary',
-                    };
-
-                    return '<span class="badge bg-' . $color . '">' . $row->readable_loyalty_level . '</span>';
-                })
-                ->addColumn('action', function ($customer) {
-                    $buttons = '';
-                    if (auth()->user()->can('ubah data customer')) {
-                        $buttons .= '<a href="' . route('customers.edit', $customer->id) . '" class="btn btn-icon btn-sm btn-dark me-1" title="Ubah">
-                                        <i class="ti ti-edit"></i>
-                                    </a>';
-                    }
-                    if (auth()->user()->can('lihat data customer')) {
-                        $buttons .= '<a href="' . route('customers.show', $customer->id) . '" class="btn btn-icon btn-sm btn-dark me-1" title="Lihat">
-                                        <i class="ti ti-eye"></i>
-                                    </a>';
-
-                    }
-                    if (auth()->user()->can('hapus data customer')) {
-                        $buttons .= '<button data-id="' . $customer->id . '" class="btn btn-icon btn-sm btn-dark delete-customer" title="Hapus">
-                                        <i class="ti ti-trash"></i>
-                                    </button>';
-                    }
-                    return $buttons;
-                })
-                ->rawColumns(['fullname', 'action', 'loyalty'])
-                ->make(true);
-        }
-
-        return view('customers.index');
+public function index(Request $request)
+{
+    $auth = auth()->user();
+ 
+    // Query dasar (sudah dibatasi hak akses). Dipakai untuk tabel DAN kartu statistik.
+    $baseQuery = Customer::with(['user.roles']);
+ 
+    if ($auth->can('lihat data customer') && !$auth->can('lihat daftar customer')) {
+        $baseQuery->where('user_id', $auth->id);
     }
-
+ 
+    if ($request->ajax()) {
+        // withCount hanya di query tabel (bukan di $baseQuery) supaya perhitungan kartu tidak terganggu
+        $query = (clone $baseQuery)->withCount('projects');
+ 
+        // Filter tab (Lead, Prospek, New Customer, Silver, Gold, Platinum)
+        if ($request->filled('loyalty')) {
+            $query->where('loyalty_level', $request->loyalty);
+        }
+ 
+        $customers = $query->get();
+ 
+        return DataTables::of($customers)
+            ->addIndexColumn()
+            ->addColumn('customer', function ($row) {
+                $name     = Str::title($row->user->fullname ?? '-');
+                $email    = $row->user->email ?? '-';
+                $initials = collect(explode(' ', trim($name)))
+                    ->filter()->take(2)
+                    ->map(fn($w) => mb_substr($w, 0, 1))
+                    ->implode('');
+                $url = route('customers.show', $row->id);
+ 
+                return '<div class="d-flex align-items-center">
+                            <span class="cust-avatar av-' . (crc32($name) % 5) . '">' . e(strtoupper($initials)) . '</span>
+                            <div class="ms-3">
+                                <a href="' . $url . '" class="cust-name">' . e($name) . '</a>
+                                <div class="cust-email">' . e($email) . '</div>
+                            </div>
+                        </div>';
+            })
+            ->editColumn('channel', fn($row) => $row->readable_channel)
+            ->addColumn('category', fn($row) => $this->readableCategory($row->category))
+            ->addColumn('orders', fn($row) => (int) $row->projects_count)
+            ->addColumn('loyalty', function ($row) {
+                // NOTE: pakai angka loyalty_level untuk warna (bukan teks),
+                // karena sebelumnya match('1','2',...) tidak pernah cocok dengan teks "Lead", dst.
+                $level = (int) $row->loyalty_level;
+                return '<span class="lv-badge lv-' . $level . '">' . e($row->readable_loyalty_level) . '</span>';
+            })
+            ->addColumn('action', function ($customer) {
+                $buttons = '<div class="d-flex justify-content-end gap-1">';
+                if (auth()->user()->can('ubah data customer')) {
+                    $buttons .= '<a href="' . route('customers.edit', $customer->id) . '" class="btn btn-icon btn-sm btn-ghost-dark" title="Ubah"><i class="ti ti-edit"></i></a>';
+                }
+                if (auth()->user()->can('lihat data customer')) {
+                    $buttons .= '<a href="' . route('customers.show', $customer->id) . '" class="btn btn-icon btn-sm btn-ghost-dark" title="Lihat"><i class="ti ti-eye"></i></a>';
+                }
+                // if (auth()->user()->can('lihat data crm')) {
+                //     $buttons .= '<a href="' . route('crm.customers.show', $customer->id) . '" class="btn btn-icon btn-sm btn-ghost-dark" title="CRM"><i class="ti ti-address-book"></i></a>';
+                // }
+                if (auth()->user()->can('hapus data customer')) {
+                    $buttons .= '<button data-id="' . $customer->id . '" class="btn btn-icon btn-sm btn-ghost-danger delete-customer" title="Hapus"><i class="ti ti-trash"></i></button>';
+                }
+                return $buttons . '</div>';
+            })
+            ->rawColumns(['customer', 'loyalty', 'action'])
+            ->with('stats', $this->loyaltyStats($baseQuery)) // supaya kartu ikut ter-update setelah hapus
+            ->make(true);
+    }
+ 
+    return view('customers.index', [
+        'stats' => $this->loyaltyStats($baseQuery),
+    ]);
+}
+private function loyaltyStats($baseQuery): array
+{
+    $counts = (clone $baseQuery)
+        ->toBase()
+        ->reorder()
+        ->selectRaw('loyalty_level, COUNT(*) as total')
+        ->groupBy('loyalty_level')
+        ->pluck('total', 'loyalty_level');
+ 
+    $stats = [];
+    foreach (range(1, 6) as $level) {
+        $stats[$level] = (int) ($counts[$level] ?? 0);
+    }
+ 
+    return $stats;
+}
     private function readableCategory($value)
     {
         return match ((int) $value) {
@@ -119,10 +131,11 @@ class CustomersController extends Controller
     {
         return match ((int) $value) {
             1 => 'Lead',
-            2 => 'New Customer',
-            3 => 'Silver',
-            4 => 'Gold',
-            5 => 'Platinum',
+            2 => 'Prospek',
+            3 => 'New Customer',
+            4 => 'Silver',
+            5 => 'Gold',
+            6 => 'Platinum',
             default => '-',
         };
     }
@@ -201,7 +214,8 @@ class CustomersController extends Controller
         'role' => 'nullable|array',
         'role.*' => 'string|exists:roles,name',
         'category' => 'nullable|in:1,2,3,4',
-        'loyalty_level' => 'nullable|in:1,2,3,4,5'
+        'channel' => ['nullable', Rule::in(array_keys(Customer::CHANNELS))],
+        'loyalty_level' => 'nullable|in:1,2,3,4,5,6'
     ]);
 
     if ($request->hasFile('photo')) {
@@ -287,6 +301,7 @@ class CustomersController extends Controller
             'sub_district_id' => $validated['sub_district_id'],
             'postal_code_id' => $validated['postal_code_id'],
             'category' => $validated['category'] ?? null,
+            'channel' => $validated['channel'] ?? null,
             'loyalty_level' => !empty($validated['loyalty_level'])
                 ? (int) $validated['loyalty_level']
                 : 1,
@@ -427,7 +442,8 @@ public function update(Request $request, Customer $customer)
             Rule::exists(PostalCode::class, 'id'),
         ],
         'category' => 'nullable|in:1,2,3,4',
-        'loyalty_level' => 'nullable|in:1,2,3,4,5',
+        'loyalty_level' => 'nullable|in:1,2,3,4,5,6',
+        'channel' => ['nullable', Rule::in(array_keys(Customer::CHANNELS))],
         'role' => 'nullable|array',
         'role.*' => 'string|exists:roles,name',
     ]);
@@ -511,6 +527,7 @@ public function update(Request $request, Customer $customer)
             'sub_district_id' => $validated['sub_district_id'],
             'postal_code_id' => $validated['postal_code_id'],
             'category' => $validated['category'] ?? null,
+            'channel' => $validated['channel'] ?? null,
             'loyalty_level' => !empty($validated['loyalty_level'])
                 ? (int) $validated['loyalty_level']
                 : 1,

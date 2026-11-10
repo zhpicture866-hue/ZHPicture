@@ -153,59 +153,6 @@
                 </div>
             </div>
             @endcan
-
-            {{--
-            ================= Blok Project (nonaktif) =================
-            Hapus tanda komentar ini kalau mau diaktifkan lagi.
-            Perlu variabel: $totalProject, $runningBuild, $completedBuild,
-            $totalDesign, $totalRab, $totalBuild, $topBuildProjects
-
-            @can('lihat daftar proyek')
-            <div class="col-12">
-                <div class="card shadow-sm border-0 rounded-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">📁 Project</h5>
-                    </div>
-                    <div class="card-body p-4">
-
-                        <div class="row g-3 mb-4">
-                            @foreach([
-                                ['📁', 'Total',             $totalProject,   route('projects.index'),                 ''],
-                                ['🚧', 'Sedang Dikerjakan', $runningBuild,   null,                                    'text-primary'],
-                                ['✅', 'Sudah Selesai',     $completedBuild, null,                                    'text-success'],
-                                ['🎨', 'Desain',            $totalDesign,    route('projects.index', ['type' => 1]), 'text-info'],
-                                ['📑', 'RAB',               $totalRab,       route('projects.index', ['type' => 2]), 'text-warning'],
-                                ['🏗', 'Build',             $totalBuild,     route('projects.index', ['type' => 3]), 'text-success'],
-                            ] as [$icon, $label, $value, $url, $color])
-                                <div class="col-6 col-md-4 col-xl-2">
-                                    <{{ $url ? 'a' : 'div' }} @if($url) href="{{ $url }}" @endif class="dash-stat text-center">
-                                        <div class="fs-2">{{ $icon }}</div>
-                                        <div class="dash-stat-label">{{ $label }}</div>
-                                        <div class="dash-stat-value {{ $color }}">{{ $value }}</div>
-                                    </{{ $url ? 'a' : 'div' }}>
-                                </div>
-                            @endforeach
-                        </div>
-
-                        <h6 class="mb-3">🏗 Progress Tertinggi</h6>
-                        @foreach($topBuildProjects as $project)
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between">
-                                    <span>{{ $project->project_name }}</span>
-                                    <span>{{ number_format($project->progress, 0) }}%</span>
-                                </div>
-                                <div class="progress mt-1" style="height:8px;">
-                                    <div class="progress-bar" style="width: {{ $project->progress }}%"></div>
-                                </div>
-                            </div>
-                        @endforeach
-
-                    </div>
-                </div>
-            </div>
-            @endcan
-            --}}
-
         </div>
     </div>
 </div>

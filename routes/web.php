@@ -61,6 +61,7 @@ Route::get('/layanan/{code}', [LayananController::class, 'show'])
     ->name('layanan.show');
 Route::middleware('noindex')->group(function () {
     require __DIR__.'/auth.php';
+    require __DIR__.'/crm.php';
 });
 
 Route::get('/sso/login', [SsoController::class, 'login'])

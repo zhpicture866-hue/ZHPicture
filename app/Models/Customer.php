@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use \App\Models\Concerns\HasCrm;
 
 class Customer extends Model
 {
@@ -106,10 +107,11 @@ public static function generateNic()
     {
     return [
         1 => 'Lead',
-        2 => 'New Customer',
-        3 => 'Silver',
-        4 => 'Gold',
-        5 => 'Platinum',
+        2 => 'Prospek',
+        3 => 'New Customer',
+        4 => 'Silver',
+        5 => 'Gold',
+        6 => 'Platinum',
     ][$this->loyalty_level] ?? 'Tidak diketahui';
     }
 
@@ -120,7 +122,7 @@ public static function generateNic()
         2 => 'Perusahaan',
         3 => 'Instansi',
         4 => 'Lainnya',
-    ][$this->loyalty_level] ?? 'Tidak diketahui';
+    ][$this->category] ?? 'Tidak diketahui';
     }
 //     public function getLoyaltyLevelAttribute()
 // {
@@ -135,6 +137,23 @@ public static function generateNic()
 //         default => 'Lead',
 //     };
 // }
+
+public const CHANNELS = [
+    'instagram' => 'Instagram',
+    'whatsapp'  => 'WhatsApp',
+    'facebook'  => 'Facebook',
+    'tiktok'    => 'TikTok',
+    'google'    => 'Google / Website',
+    'referral'  => 'Referensi / Teman',
+    'event'     => 'Event / Pameran',
+    'other'     => 'Lainnya',
+];
+
+public function getReadableChannelAttribute()
+{
+    return self::CHANNELS[$this->channel] ?? '-';
+}
+
     protected function displayNameWithTitle(): Attribute
 {
     return Attribute::make(
@@ -153,7 +172,7 @@ public static function generateNic()
 }
 
 
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, HasCrm;
 
     protected $table = 'customers';
     protected $keyType = 'string';
@@ -176,6 +195,7 @@ public static function generateNic()
         'notes',
         'is_active',
         'signature',
+        'channel'
     ];
 
 }
