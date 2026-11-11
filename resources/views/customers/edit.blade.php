@@ -300,10 +300,11 @@
                                 <label class="form-label">Loyalty Level</label>
                                 <select name="loyalty_level" class="form-select select2">
                                     <option value="1" {{ old('loyalty_level', $customer->loyalty_level) == 1 ? 'selected' : '' }}>Lead</option>
-                                    <option value="2" {{ old('loyalty_level', $customer->loyalty_level) == 2 ? 'selected' : '' }}>New Customer</option>
-                                    <option value="3" {{ old('loyalty_level', $customer->loyalty_level) == 3 ? 'selected' : '' }}>Silver</option>
-                                    <option value="4" {{ old('loyalty_level', $customer->loyalty_level) == 4 ? 'selected' : '' }}>Gold</option>
-                                    <option value="5" {{ old('loyalty_level', $customer->loyalty_level) == 5 ? 'selected' : '' }}>Platinum</option>
+                                    <option value="2" {{ old('loyalty_level', $customer->loyalty_level) == 2 ? 'selected' : '' }}>Prospek</option>
+                                    <option value="3" {{ old('loyalty_level', $customer->loyalty_level) == 3 ? 'selected' : '' }}>New Customer</option>                                    
+                                    <option value="4" {{ old('loyalty_level', $customer->loyalty_level) == 4 ? 'selected' : '' }}>Silver</option>
+                                    <option value="5" {{ old('loyalty_level', $customer->loyalty_level) == 5 ? 'selected' : '' }}>Gold</option>
+                                    <option value="6" {{ old('loyalty_level', $customer->loyalty_level) == 6 ? 'selected' : '' }}>Platinum</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
