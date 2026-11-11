@@ -33,7 +33,23 @@
         .lv-badge { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: .75rem; font-weight: 600; color: var(--c); background: var(--bg); }
 
         /* ---------- Tabs filter ---------- */
-        .filter-tabs { display: inline-flex; flex-wrap: wrap; gap: 2px; background: #f2f4f7; padding: 4px; border-radius: 10px; }
+        /* Kartu Total Customer (highlight) */
+        .stat-total { background: #101828; border-color: #101828; }
+        .stat-total .stat-label, .stat-total .stat-sub { color: #d0d5dd; }
+        .stat-total .stat-value { color: #fff; }
+        .stat-total .stat-icon { background: rgba(255,255,255,.14); color: #fff; }
+
+        /* Tab bisa digeser (swipe) horizontal di mobile */
+        .filter-tabs {
+            display: flex; flex-wrap: nowrap; gap: 2px;
+            width: fit-content; max-width: 100%;
+            overflow-x: auto; -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x proximity; scrollbar-width: none;
+            background: #f2f4f7; padding: 4px; border-radius: 10px;
+        }
+        .filter-tabs::-webkit-scrollbar { display: none; }
+        .filter-tabs .tab-btn { white-space: nowrap; flex-shrink: 0; scroll-snap-align: center; }
+        @media (max-width: 575.98px) { .filter-tabs { width: 100%; } }
         .filter-tabs .tab-btn { border: 0; background: transparent; padding: 6px 14px; border-radius: 8px; font-size: .8rem; font-weight: 500; color: #667085; cursor: pointer; }
         .filter-tabs .tab-btn.active { background: #fff; color: #101828; box-shadow: 0 1px 2px rgba(16,24,40,.1); }
 
@@ -80,8 +96,22 @@
 
             {{-- ===== Kartu ringkasan ===== --}}
             <div class="row g-3 mb-3">
+                {{-- Total seluruh customer --}}
+                <div class="col-12 col-xl">
+                    <div class="card stat-card stat-total">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="stat-label">Total Customer</div>
+                                <span class="stat-icon"><i class="ti ti-users"></i></span>
+                            </div>
+                            <div class="stat-value mt-1" data-stat="total">{{ number_format($grand) }}</div>
+                            <div class="stat-sub">Seluruh level</div>
+                        </div>
+                    </div>
+                </div>
+
                 @foreach ($cards as $level => $c)
-                    <div class="col-6 col-md-4 col-xl-2">
+                    <div class="col-6 col-md-4 col-xl">
                         <div class="card stat-card">
                             <div class="card-body p-3">
                                 <div class="d-flex justify-content-between align-items-start">
@@ -183,6 +213,7 @@
             $('#loyaltyTabs').on('click', '.tab-btn', function () {
                 $('#loyaltyTabs .tab-btn').removeClass('active');
                 $(this).addClass('active');
+                this.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                 activeLevel = $(this).data('level');
                 table.ajax.reload();
             });
@@ -191,6 +222,7 @@
             table.on('xhr.dt', function (e, settings, json) {
                 if (!json || !json.stats) return;
                 const total = Object.values(json.stats).reduce((a, b) => a + b, 0);
+                $('[data-stat="total"]').text(total.toLocaleString('id-ID'));
                 Object.entries(json.stats).forEach(([lvl, n]) => {
                     $('[data-stat="' + lvl + '"]').text(n.toLocaleString('id-ID'));
                     $('[data-stat-pct="' + lvl + '"]').text((total ? Math.round(n / total * 100) : 0) + '% dari total');

@@ -13,6 +13,7 @@ use App\Models\PostalCode;
 use Illuminate\Support\Carbon;
 use App\Models\User;
 use App\Models\Bank;
+use App\Helpers\ActiveRole;
 use Spatie\Permission\Models\Role;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Storage;
@@ -24,7 +25,15 @@ use Illuminate\Http\JsonResponse;
 
 class CustomersController extends Controller
 {
+    private function authorizeCustomer(Customer $customer, string $permission): void
+    {
+        abort_unless(ActiveRole::hasPermission($permission), 403);
 
+        if (!ActiveRole::hasPermission('lihat daftar customer')
+            && $customer->user_id !== auth()->id()) {
+            abort(403);
+        }
+    }
 public function index(Request $request)
 {
     $auth = auth()->user();
@@ -32,10 +41,10 @@ public function index(Request $request)
     // Query dasar (sudah dibatasi hak akses). Dipakai untuk tabel DAN kartu statistik.
     $baseQuery = Customer::with(['user.roles']);
  
-    if ($auth->can('lihat data customer') && !$auth->can('lihat daftar customer')) {
+    if (!ActiveRole::hasPermission('lihat daftar customer')) {
         $baseQuery->where('user_id', $auth->id);
     }
- 
+
     if ($request->ajax()) {
         // withCount hanya di query tabel (bukan di $baseQuery) supaya perhitungan kartu tidak terganggu
         $query = (clone $baseQuery)->withCount('projects');
@@ -77,16 +86,16 @@ public function index(Request $request)
             })
             ->addColumn('action', function ($customer) {
                 $buttons = '<div class="d-flex justify-content-end gap-1">';
-                if (auth()->user()->can('ubah data customer')) {
+                if (ActiveRole::hasPermission('ubah data customer')) {
                     $buttons .= '<a href="' . route('customers.edit', $customer->id) . '" class="btn btn-icon btn-sm btn-ghost-dark" title="Ubah"><i class="ti ti-edit"></i></a>';
                 }
-                if (auth()->user()->can('lihat data customer')) {
+                if (ActiveRole::hasPermission('lihat data customer')) {
                     $buttons .= '<a href="' . route('customers.show', $customer->id) . '" class="btn btn-icon btn-sm btn-ghost-dark" title="Lihat"><i class="ti ti-eye"></i></a>';
                 }
                 // if (auth()->user()->can('lihat data crm')) {
                 //     $buttons .= '<a href="' . route('crm.customers.show', $customer->id) . '" class="btn btn-icon btn-sm btn-ghost-dark" title="CRM"><i class="ti ti-address-book"></i></a>';
                 // }
-                if (auth()->user()->can('hapus data customer')) {
+                if (ActiveRole::hasPermission('hapus data customer')) {
                     $buttons .= '<button data-id="' . $customer->id . '" class="btn btn-icon btn-sm btn-ghost-danger delete-customer" title="Hapus"><i class="ti ti-trash"></i></button>';
                 }
                 return $buttons . '</div>';
@@ -339,6 +348,7 @@ public static function generateNicAjax()
 
  public function show(Customer $customer)
     {
+        $this->authorizeCustomer($customer, 'lihat data member');
         $customer->load('user');
         return view('sdm.customers.show', [
             'user' => $customer->user,
@@ -349,6 +359,8 @@ public static function generateNicAjax()
 public function edit($id)
     {
         $customer = Customer::with(['user.roles', 'user.bank'])->findOrFail($id);
+        $this->authorizeCustomer($customer, 'ubah data customer');
+
         $user = $customer->user;
         $religions = Religion::all();
         $provinces = Province::all();
@@ -366,6 +378,10 @@ public function edit($id)
 
 public function update(Request $request, Customer $customer)
 {
+    $this->authorizeCustomer($customer, 'ubah data customer');
+
+    // Hanya peran pengelola yang boleh mengubah peran, kategori, dan loyalty
+    $canManage = ActiveRole::hasPermission('lihat daftar customer');
     $code = preg_replace('/\D/', '', $request->phone_code ?? '');
     $num  = ltrim(preg_replace('/\D/', '', $request->phone_number ?? ''), '0');
 
@@ -379,7 +395,6 @@ public function update(Request $request, Customer $customer)
         'fullname' => 'required|string|max:255',
         'nickname' => 'nullable|string|max:100',
         'gender' => 'nullable|in:1,2',
-        'title' => 'nullable|in:1,2,3',
         'email' => [
             'required',
             'email',
@@ -399,8 +414,7 @@ public function update(Request $request, Customer $customer)
             Rule::exists(Religion::class, 'id'),
         ],
         'npwp' => 'nullable|string|max:30',
-        'phone_code' => ['nullable', 'required_with:phone_number', Rule::in(array_keys(config('phone_codes')))],
-        'phone'      => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'],
+        'phone' => 'nullable|string|max:20',
         'address' => 'nullable|string|max:255',
         'user_province_id' => [
             'nullable',
@@ -415,6 +429,7 @@ public function update(Request $request, Customer $customer)
         'account_holder' => 'nullable|string|max:50',
         'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
 
+        // --- data customer ---
         'nic' => 'nullable|string|max:50|unique:customers,nic,' . $customer->id,
         'shipping_name' => 'nullable|string|max:255',
         'shipping_phone' => 'nullable|string|max:20',
@@ -445,95 +460,109 @@ public function update(Request $request, Customer $customer)
         'loyalty_level' => 'nullable|in:1,2,3,4,5,6',
         'channel' => ['nullable', Rule::in(array_keys(Customer::CHANNELS))],
         'role' => 'nullable|array',
-        'role.*' => 'string|exists:roles,name',
+        'role.*' => ['string', Rule::exists('roles', 'name')->where('role_group', 'Eksternal')],
     ]);
 
+    // Member biasa tidak boleh menyentuh peran, kategori, maupun loyalty
+    if (!$canManage) {
+        unset($validated['role'], $validated['category'], $validated['loyalty_level']);
+    }
+
+    // Alamat pengiriman disamakan dengan alamat user
     if ($request->has('same_address')) {
-            $validated['province_id'] = $validated['user_province_id'];
-            $validated['city_id'] = $validated['user_city_id'];
-            $validated['district_id'] = $validated['user_district_id'];
-            $validated['sub_district_id'] = $validated['user_sub_district_id'];
-            $validated['postal_code_id'] = $validated['user_postal_code_id'];
-            $validated['shipping_address'] = $validated['address'];
-            $validated['shipping_name'] = $validated['fullname'];
-            $validated['shipping_phone'] = $validated['phone'];
-        }
+        $validated['province_id']      = $validated['user_province_id'] ?? null;
+        $validated['city_id']          = $validated['user_city_id'] ?? null;
+        $validated['district_id']      = $validated['user_district_id'] ?? null;
+        $validated['sub_district_id']  = $validated['user_sub_district_id'] ?? null;
+        $validated['postal_code_id']   = $validated['user_postal_code_id'] ?? null;
+        $validated['shipping_address'] = $validated['address'] ?? null;
+        $validated['shipping_name']    = $validated['fullname'];
+        $validated['shipping_phone']   = $validated['phone'] ?? null;
+    }
 
-    $newPhotoPath = null;
+    $newPhotoPath = null;   // foto baru yang baru diunggah
+    $oldPhotoPath = null;   // foto lama yang dihapus setelah transaksi berhasil
 
-    DB::transaction(function () use ($validated, $customer, $request) {
-        $user = $customer->user;
+    try {
+        DB::transaction(function () use ($validated, $customer, $request, $canManage, &$newPhotoPath, &$oldPhotoPath) {
+            $user = $customer->user;
 
-        if ($request->hasFile('photo')) {
-            $newPhotoPath = $request->file('photo')->storeAs(
-                'photos',
-                Str::uuid().'.'.$request->file('photo')->getClientOriginalExtension(),
-                'public'
-            );
+            if ($request->hasFile('photo')) {
+                $newPhotoPath = $request->file('photo')->storeAs(
+                    'photos',
+                    Str::uuid() . '.' . $request->file('photo')->getClientOriginalExtension(),
+                    'public'
+                );
 
-            if ($user->photo && Storage::disk('public')->exists($user->photo)) {
-                Storage::disk('public')->delete($user->photo);
+                $oldPhotoPath = $user->photo;
+                $validated['photo'] = $newPhotoPath;
             }
 
-            $validated['photo'] = $newPhotoPath;
-        }
+            $user->update([
+                'fullname' => $validated['fullname'],
+                'nickname' => $validated['nickname'] ?? null,
+                'birth_place' => $validated['birth_place'] ?? null,
+                'birth_date' => $validated['birth_date'] ?? null,
+                'identity_number' => $validated['identity_number'] ?? null,
+                'religion_id' => $validated['religion_id'] ?? null,
+                'npwp' => $validated['npwp'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'province_id' => $validated['user_province_id'] ?? null,
+                'city_id' => $validated['user_city_id'] ?? null,
+                'district_id' => $validated['user_district_id'] ?? null,
+                'sub_district_id' => $validated['user_sub_district_id'] ?? null,
+                'postal_code_id' => $validated['user_postal_code_id'] ?? null,
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+                'gender' => $validated['gender'] ?? null,
+                'bank_id' => $validated['bank_id'] ?? null,
+                'account_number' => $validated['account_number'] ?? null,
+                'account_holder' => $validated['account_holder'] ?? null,
+                'photo' => $validated['photo'] ?? $user->photo,
+            ]);
 
-        $user->update([
-            'fullname' => $validated['fullname'],
-            'nickname' => $validated['nickname'],
-            'birth_place' => $validated['birth_place'],
-            'birth_date' => $validated['birth_date'],
-            'identity_number' => $validated['identity_number'],
-            'religion_id' => $validated['religion_id'],
-            'npwp' => $validated['npwp'],
-            'address' => $validated['address'],
-            'province_id' => $validated['user_province_id'],
-            'city_id' => $validated['user_city_id'],
-            'district_id' => $validated['user_district_id'],
-            'sub_district_id' => $validated['user_sub_district_id'],
-            'postal_code_id' => $validated['user_postal_code_id'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'],
-            'phone_code' => $validated['phone_code'],
-            'gender' => $validated['gender'],
-            'title' => $validated['title'],
-            'bank_id' => $validated['bank_id'] ?? null,
-            'account_number' => $validated['account_number'] ?? null,
-            'account_holder' => $validated['account_holder'] ?? null,
-            'photo' => $validated['photo'] ?? $user->photo,
-        ]);
-
-        if (!empty($validated['role'])) {
-            foreach ($validated['role'] as $r) {
-                if (!$user->hasRole($r)) {
-                    $user->assignRole($r);
+            // Peran hanya boleh ditambah oleh pengelola
+            if ($canManage && !empty($validated['role'])) {
+                foreach ($validated['role'] as $roleName) {
+                    if (!$user->hasRole($roleName)) {
+                        $user->assignRole($roleName);
+                    }
                 }
             }
-        } else {
-            // Pastikan minimal masih punya role Customer
-            if (!$user->hasRole('Customer')) {
-                $user->assignRole('Customer');
-            }
+
+            $customer->update([
+                'nic' => $validated['nic'] ?? null,
+                'shipping_name' => $validated['shipping_name'] ?? null,
+                'shipping_phone' => $validated['shipping_phone'] ?? null,
+                'shipping_address' => $validated['shipping_address'] ?? null,
+                'province_id' => $validated['province_id'] ?? null,
+                'city_id' => $validated['city_id'] ?? null,
+                'district_id' => $validated['district_id'] ?? null,
+                'sub_district_id' => $validated['sub_district_id'] ?? null,
+                'postal_code_id' => $validated['postal_code_id'] ?? null,
+                'channel' => $validated['channel'] ?? null,
+                'category' => $canManage
+                    ? ($validated['category'] ?? null)
+                    : $customer->category,
+                'loyalty_level' => $canManage
+                    ? (!empty($validated['loyalty_level']) ? (int) $validated['loyalty_level'] : 1)
+                    : $customer->loyalty_level,
+                'photo' => $validated['photo'] ?? $customer->photo,
+            ]);
+        });
+    } catch (\Throwable $e) {
+        // Transaksi gagal: buang foto baru supaya tidak jadi file yatim
+        if ($newPhotoPath && Storage::disk('public')->exists($newPhotoPath)) {
+            Storage::disk('public')->delete($newPhotoPath);
         }
 
-        $customer->update([
-            'nic' => $validated['nic'],
-            'shipping_name' => $validated['shipping_name'],
-            'shipping_phone' => $validated['shipping_phone'],
-            'shipping_address' => $validated['shipping_address'],
-            'province_id' => $validated['province_id'],
-            'city_id' => $validated['city_id'],
-            'district_id' => $validated['district_id'],
-            'sub_district_id' => $validated['sub_district_id'],
-            'postal_code_id' => $validated['postal_code_id'],
-            'category' => $validated['category'] ?? null,
-            'channel' => $validated['channel'] ?? null,
-            'loyalty_level' => !empty($validated['loyalty_level'])
-                ? (int) $validated['loyalty_level']
-                : 1,
-            'photo' => $validated['photo'] ?? $customer->photo,
-        ]);
-    });
+        throw $e;
+    }
+
+    // Transaksi berhasil: baru hapus foto lama
+    if ($oldPhotoPath && Storage::disk('public')->exists($oldPhotoPath)) {
+        Storage::disk('public')->delete($oldPhotoPath);
+    }
 
     return redirect()
         ->route('customers.show', $customer->id)
@@ -543,42 +572,56 @@ public function update(Request $request, Customer $customer)
 
 public function destroy(Customer $customer): JsonResponse
 {
-    DB::transaction(function () use ($customer) {
+    abort_if($customer->user_id === auth()->id(), 403, 'Tidak bisa menghapus akun sendiri.');
+    $this->authorizeCustomer($customer, 'hapus data member');
+
+    $photosToDelete = [];
+
+    DB::transaction(function () use ($customer, &$photosToDelete) {
         $user = $customer->user;
 
-        // 🔹 Hapus foto customer dari storage kalau ada
-        if ($customer->photo && Storage::disk('public')->exists('photos/' . $customer->photo)) {
-            Storage::disk('public')->delete('photos/' . $customer->photo);
+        if ($customer->photo) {
+            $photosToDelete[] = $customer->photo;
         }
 
-        // 🔹 Hapus record customer
         $customer->delete();
 
-        // 🔹 Cek user yang terhubung
         if ($user) {
             $roles = $user->roles->pluck('name')->toArray();
 
-            // Kalau hanya punya role "Customer"
-            if (count($roles) === 1 && in_array('Customer', $roles)) {
-
-                // Hapus juga foto user kalau ada
-                if ($user->photo && Storage::disk('public')->exists('photos/' . $user->photo)) {
-                    Storage::disk('public')->delete('photos/' . $user->photo);
+            if (count($roles) === 1 && in_array('Member', $roles)) {
+                // Member adalah satu-satunya peran: hapus akun beserta fotonya
+                if ($user->photo) {
+                    $photosToDelete[] = $user->photo;
                 }
 
-                // Hapus akun user
                 $user->delete();
-
             } else {
-                // Kalau user masih punya role lain, hapus hanya role Customer-nya
+                // Masih punya peran lain: cabut peran Member saja
+                $memberRoleId = Role::where('name', 'Customer')->value('id');
+
                 $user->removeRole('Customer');
+
+                // Kalau peran aktifnya Member, pindahkan ke peran lain yang tersisa
+                if ($memberRoleId && $user->active_role === $memberRoleId) {
+                    $user->update([
+                        'active_role' => $user->roles()->first()?->id,
+                    ]);
+                }
             }
         }
     });
 
+    // File dihapus setelah transaksi sukses, supaya data tidak hilang kalau rollback
+    foreach (array_unique($photosToDelete) as $path) {
+        if (Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+    }
+
     return response()->json([
         'status' => 'success',
-        'message' => 'Data customer berhasil dihapus.'
+        'message' => 'Data customer berhasil dihapus.',
     ]);
 }
 
