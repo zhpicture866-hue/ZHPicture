@@ -1334,7 +1334,29 @@ input[type=number]::-webkit-outer-spin-button {
 
    .jurnal-table-wrapper { min-width: 0; }
    .card-body, .col-12 { min-width: 0; }
+.jurnal-show-table {
+    width: 100%;
+    min-width: 900px;      /* di HP tabel tetap selebar ini, lalu bisa digeser */
+    table-layout: fixed;
+    margin: 0;
+}
 
+.jurnal-show-table th,
+.jurnal-show-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.jurnal-show-table th:nth-child(1) { width: 110px; }
+.jurnal-show-table th:nth-child(4) { width: 160px; }
+.jurnal-show-table th:nth-child(5) { width: 160px; }
+.jurnal-show-table th:nth-child(6) { width: 160px; }
+
+.jurnal-show-table td:nth-child(5),
+.jurnal-show-table td:nth-child(6) {
+    white-space: nowrap;
+}
 /* Target sentuh yang nyaman di HP */
 @media (max-width: 991.98px) {
     .jurnal-table .form-control,

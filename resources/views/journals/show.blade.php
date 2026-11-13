@@ -14,7 +14,6 @@
     </div>
 </div>
 
-
 <div class="page-body">
     <div class="container-xl">
         <div class="row row-deck row-cards">
@@ -72,7 +71,7 @@
                         </div>
 
                         <div class="table-responsive mb-4">
-                            <table class="table table-hover align-middle jurnal-table">
+                            <table class="table table-hover align-middle jurnal-show-table">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Kode Akun</th>
@@ -97,13 +96,12 @@
 
                                         <tr>
                                             <td>{{ $detail->account->account_code ?? '-' }}</td>
-                                            <td title="{{ $detail->account->account_name ?? '-' }}">
-                                                {{ Str::limit($detail->account->account_name ?? '-', 45) }}
-                                            </td>
-
-                                            <td title="{{ $detail->description ?? '-' }}">
-                                                {{ Str::limit($detail->description ?? '-', 35) }}
-                                            </td>
+<td class="text-truncate" title="{{ $detail->account->account_name ?? '-' }}">
+    {{ $detail->account->account_name ?? '-' }}
+</td>
+<td class="text-truncate" title="{{ $detail->description ?? '-' }}">
+    {{ $detail->description ?? '-' }}
+</td>
                                             <td>{{ $detail->person_name ?? '-' }}</td>
                                             <td class="text-end text-success">
                                                 Rp {{ number_format($detail->debit, 2, ',', '.') }}
