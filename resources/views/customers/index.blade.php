@@ -149,7 +149,7 @@
                                 <tr>
                                     <th width="5%">No</th>
                                     <th>Customer</th>
-                                    <th>ID Customer</th>
+                                    {{-- <th>ID Customer</th> --}}
                                     <th>Channel</th>
                                     <th>Kategori</th>
                                     <th>Order</th>
@@ -189,7 +189,7 @@
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'customer', name: 'customer', orderable: false },
-                    { data: 'nic', name: 'nic' },
+                    // { data: 'nic', name: 'nic' },
                     { data: 'channel', name: 'channel' },
                     { data: 'category', name: 'category' },
                     { data: 'orders', name: 'orders', searchable: false },

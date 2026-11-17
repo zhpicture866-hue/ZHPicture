@@ -151,7 +151,7 @@ public const CHANNELS = [
 
 public function getReadableChannelAttribute()
 {
-    return self::CHANNELS[$this->channel] ?? '-';
+    return self::CHANNELS[$this->channel] ?? 'Tidak diketahui';
 }
 
     protected function displayNameWithTitle(): Attribute

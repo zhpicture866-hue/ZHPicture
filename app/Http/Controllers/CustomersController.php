@@ -36,6 +36,7 @@ class CustomersController extends Controller
     }
     public function index(Request $request)
     {
+        $auth = auth()->user();
         // Query dasar (sudah dibatasi hak akses). Dipakai untuk tabel DAN kartu statistik.
         $baseQuery = Customer::with(['user.roles']);
     
@@ -63,10 +64,16 @@ class CustomersController extends Controller
                         ->filter()->take(2)
                         ->map(fn($w) => mb_substr($w, 0, 1))
                         ->implode('');
-                    $url = route('customers.show', $row->id);
-    
+                    $url   = route('customers.show', $row->id);
+                    $photo = $row->user?->photo;
+
+                    // Ada foto => tampilkan foto, kalau tidak => avatar inisial
+                    $avatar = $photo
+                        ? '<img src="' . e(asset('storage/' . ltrim($photo, '/'))) . '" alt="" class="cust-avatar cust-avatar-img" loading="lazy">'
+                        : '<span class="cust-avatar av-' . (crc32($name) % 5) . '">' . e(strtoupper($initials)) . '</span>';
+
                     return '<div class="d-flex align-items-center">
-                                <span class="cust-avatar av-' . (crc32($name) % 5) . '">' . e(strtoupper($initials)) . '</span>
+                                ' . $avatar . '
                                 <div class="ms-3">
                                     <a href="' . $url . '" class="cust-name">' . e($name) . '</a>
                                     <div class="cust-email">' . e($email) . '</div>
@@ -74,7 +81,7 @@ class CustomersController extends Controller
                             </div>';
                 })
                 ->editColumn('channel', fn($row) => $row->readable_channel)
-                ->addColumn('category', fn($row) => $this->readableCategory($row->category))
+                ->addColumn('category', fn($row) => $row->readbale_category)
                 ->addColumn('orders', fn($row) => (int) $row->projects_count)
                 ->addColumn('created_at', fn($row) => $row->created_at
                     ? $row->created_at->locale('id')->diffForHumans()   // "3 hari yang lalu"
@@ -128,29 +135,6 @@ class CustomersController extends Controller
         }
     
         return $stats;
-    }
-    private function readableCategory($value)
-    {
-        return match ((int) $value) {
-            1 => 'Individu',
-            2 => 'Perusahaan',
-            3 => 'Instansi',
-            4 => 'Lainnya',
-            default => '-',
-        };
-    }
-
-    private function readableLoyaltyLevel($value)
-    {
-        return match ((int) $value) {
-            1 => 'Lead',
-            2 => 'Prospek',
-            3 => 'New Customer',
-            4 => 'Silver',
-            5 => 'Gold',
-            6 => 'Platinum',
-            default => '-',
-        };
     }
 
     public function create(Customer $customer)
@@ -228,7 +212,6 @@ class CustomersController extends Controller
         'role.*' => 'string|exists:roles,name',
         'category' => 'nullable|in:1,2,3,4',
         'channel' => ['nullable', Rule::in(array_keys(Customer::CHANNELS))],
-        'loyalty_level' => 'nullable|in:1,2,3,4,5,6'
     ]);
 
     if ($request->hasFile('photo')) {
@@ -315,9 +298,7 @@ class CustomersController extends Controller
             'postal_code_id' => $validated['postal_code_id'],
             'category' => $validated['category'] ?? null,
             'channel' => $validated['channel'] ?? null,
-            'loyalty_level' => !empty($validated['loyalty_level'])
-                ? (int) $validated['loyalty_level']
-                : 1,
+            'loyalty_level' => 1,
             'photo' => $validated['photo'] ?? null,
         ]);
     });
