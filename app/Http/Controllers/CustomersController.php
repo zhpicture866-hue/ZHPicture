@@ -442,7 +442,6 @@ public function update(Request $request, Customer $customer)
             Rule::exists(PostalCode::class, 'id'),
         ],
         'category' => 'nullable|in:1,2,3,4',
-        'loyalty_level' => 'nullable|in:1,2,3,4,5,6',
         'channel' => ['nullable', Rule::in(array_keys(Customer::CHANNELS))],
         'role' => 'nullable|array',
         'role.*' => ['string', Rule::exists('roles', 'name')->where('role_group', 'Eksternal')],
@@ -529,9 +528,6 @@ public function update(Request $request, Customer $customer)
                 'category' => $canManage
                     ? ($validated['category'] ?? null)
                     : $customer->category,
-                'loyalty_level' => $canManage
-                    ? (!empty($validated['loyalty_level']) ? (int) $validated['loyalty_level'] : 1)
-                    : $customer->loyalty_level,
                 'photo' => $validated['photo'] ?? $customer->photo,
             ]);
         });

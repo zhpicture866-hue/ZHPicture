@@ -174,7 +174,7 @@ public function getReadableChannelAttribute()
 
     use HasFactory, HasUuids, HasCrm;
 
-    protected $table = 'customers';
+    protected $table = 'zhpicture.customers';
     protected $keyType = 'string';
     public $incrementing = false;
 
