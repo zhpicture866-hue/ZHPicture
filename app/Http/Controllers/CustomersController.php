@@ -362,24 +362,34 @@ public static function generateNicAjax()
     }
 
 public function edit($id)
-    {
-        $customer = Customer::with(['user.roles', 'user.bank'])->findOrFail($id);
-        $this->authorizeCustomer($customer, 'ubah data customer');
+{
+    $customer = Customer::with(['user.roles', 'user.bank'])->findOrFail($id);
+    $this->authorizeCustomer($customer, 'ubah data customer');
 
-        $user = $customer->user;
-        $religions = Religion::all();
-        $provinces = Province::all();
-        $roles = Role::all();
-        $selectedRoles = $user->roles->pluck('name')->toArray();
-        $cities = City::where('province_id', $user->province_id)->get();
-        $districts = District::where('city_id', $user->city_id)->get();
-        $subDistricts = SubDistrict::where('district_id', $user->district_id)->get();
-        $postalCodes = PostalCode::where('sub_district_id', $user->sub_district_id)->get();
-        
+    $user = $customer->user;
+    $religions = Religion::all();
+    $provinces = Province::all();
+    $roles = Role::all();
+    $selectedRoles = $user->roles->pluck('name')->toArray();
 
-        return view('customers.edit', compact('user', 'roles', 'selectedRoles', 'customer',
-        'religions', 'provinces', 'cities', 'districts', 'subDistricts', 'postalCodes'));
-    }
+    // List wilayah domisili user
+    $cities       = City::where('province_id', $user->province_id)->get();
+    $districts    = District::where('city_id', $user->city_id)->get();
+    $subDistricts = SubDistrict::where('district_id', $user->district_id)->get();
+    $postalCodes  = PostalCode::where('sub_district_id', $user->sub_district_id)->get();
+
+    // List wilayah alamat pengiriman customer
+    $shipCities       = City::where('province_id', $customer->province_id)->get();
+    $shipDistricts    = District::where('city_id', $customer->city_id)->get();
+    $shipSubDistricts = SubDistrict::where('district_id', $customer->district_id)->get();
+    $shipPostalCodes  = PostalCode::where('sub_district_id', $customer->sub_district_id)->get();
+
+    return view('customers.edit', compact(
+        'user', 'roles', 'selectedRoles', 'customer', 'religions', 'provinces',
+        'cities', 'districts', 'subDistricts', 'postalCodes',
+        'shipCities', 'shipDistricts', 'shipSubDistricts', 'shipPostalCodes'
+    ));
+}
 
 public function update(Request $request, Customer $customer)
 {
@@ -395,6 +405,11 @@ public function update(Request $request, Customer $customer)
     }
 
     $request->merge(['phone' => $num !== '' ? $code . $num : null]);
+    $ship = preg_replace('/\D/', '', $request->shipping_phone ?? '');
+    if ($ship !== '' && str_starts_with($ship, '0')) {
+        $ship = '62' . substr($ship, 1);   // 08xx → 628xx
+    }
+    $request->merge(['shipping_phone' => $ship !== '' ? $ship : null]);
     $validated = $request->validate([
         // --- data user ---
         'fullname' => 'required|string|max:255',
@@ -419,7 +434,8 @@ public function update(Request $request, Customer $customer)
             Rule::exists(Religion::class, 'id'),
         ],
         'npwp' => 'nullable|string|max:30',
-        'phone' => 'nullable|string|max:20',
+        'phone_code' => ['nullable', 'required_with:phone_number', Rule::in(array_keys(config('phone_codes')))],
+        'phone'      => ['nullable', 'regex:/^[1-9][0-9]{7,14}$/'],
         'address' => 'nullable|string|max:255',
         'user_province_id' => [
             'nullable',
@@ -518,6 +534,7 @@ public function update(Request $request, Customer $customer)
                 'postal_code_id' => $validated['user_postal_code_id'] ?? null,
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
+                'phone_code' => !empty($validated['phone']) ? ($validated['phone_code'] ?? null) : null,
                 'gender' => $validated['gender'] ?? null,
                 'bank_id' => $validated['bank_id'] ?? null,
                 'account_number' => $validated['account_number'] ?? null,
