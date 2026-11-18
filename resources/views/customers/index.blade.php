@@ -10,7 +10,7 @@
             5 => ['label' => 'Gold',         'icon' => 'ti-trophy'],
             6 => ['label' => 'Platinum',     'icon' => 'ti-diamond'],
         ];
-        $grand = array_sum($stats);
+        $grand = $total;
     @endphp
 
     <style>
@@ -78,7 +78,7 @@
         <div class="container-xl">
             <div class="row g-2 align-items-center">
                 <div class="col">
-                    <h2 class="page-title">Customers</h2>
+                    <h2>Customers</h2>
                     <div class="text-secondary small">Semua data pelanggan dalam satu tempat.</div>
                 </div>
                 <div class="col-12 col-md-auto ms-auto d-print-none">
@@ -95,7 +95,7 @@
     <div class="page-body">
         <div class="container-xl">
 
-            {{-- ===== Kartu ringkasan ===== --}}
+            @if($canViewAll)
             <div class="row g-3 mb-3">
                 {{-- Total seluruh customer --}}
                 <div class="col-12 col-xl">
@@ -128,11 +128,12 @@
                     </div>
                 @endforeach
             </div>
-
+            @endif
             {{-- ===== Tabel ===== --}}
             <div class="card stat-card">
                 <div class="card-body">
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        @if($canViewAll)
                         <div class="filter-tabs" id="loyaltyTabs">
                             <button type="button" class="tab-btn active" data-level="">Semua</button>
                             @foreach ($cards as $level => $c)
@@ -141,6 +142,7 @@
                                 </button>
                             @endforeach
                         </div>
+                        @endif
                     </div>
 
                     <div class="table-responsive">
@@ -224,7 +226,7 @@
             // Update kartu setelah data di-reload (misal habis hapus)
             table.on('xhr.dt', function (e, settings, json) {
                 if (!json || !json.stats) return;
-                const total = Object.values(json.stats).reduce((a, b) => a + b, 0);
+                const total = json.total;
                 $('[data-stat="total"]').text(total.toLocaleString('id-ID'));
                 Object.entries(json.stats).forEach(([lvl, n]) => {
                     $('[data-stat="' + lvl + '"]').text(n.toLocaleString('id-ID'));
