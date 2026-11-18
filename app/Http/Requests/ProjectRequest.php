@@ -24,6 +24,9 @@ class ProjectRequest extends FormRequest
             'employee_id'       => 'required|uuid',
             'customer_id'       => 'required|uuid',
             'affiliator_id'     => 'nullable|uuid',
+            'customer_id'   => 'required|uuid|exists:zhpicture.customers,id',
+'employee_id'   => 'required|uuid|exists:zhpicture.employees,id', // sesuaikan nama tabel
+'affiliator_id' => 'nullable|uuid', // sesuaikan nama tabel
             'start_date'        => 'required|date',
             'end_date'          => 'nullable|date|after_or_equal:start_date',
             'project_status'    => 'nullable|integer',
