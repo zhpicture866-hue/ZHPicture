@@ -1258,7 +1258,7 @@ input[type=number]::-webkit-outer-spin-button {
         color: #212529;
 
         font-size: 15px;
-        font-weight: 700;
+        font-weight: 400;
     }
 
     .termin-amount-wrapper {

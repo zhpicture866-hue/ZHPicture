@@ -121,12 +121,13 @@
                 <div class="row g-3 align-items-end">
 
                     {{-- NOMOR --}}
+                    {{-- NOMOR --}}
                     <div class="col-md-1">
-                        <label class="form-label text-muted small">
+                        <label class="form-label small fw-semibold">
                             Termin
                         </label>
 
-                        <div class="termin-number">
+                        <div class="form-control d-flex align-items-center justify-content-center bg-light border-0 px-0 termin-number">
                             <span class="termin-no">1</span>
                         </div>
                     </div>
@@ -504,7 +505,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* ---------- Tambah / hapus baris ---------- */
 
-    function addRow(data) {
+    function addRow(data, skipRefresh) {
         data = data || {};
 
         const row = template.content
@@ -537,9 +538,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         container.appendChild(row);
 
-        updateTerminNumbers();
-        updateAutoLastRow();
-        refreshSummary();
+        if (!skipRefresh) {
+            updateTerminNumbers();
+            updateAutoLastRow();
+            refreshSummary();
+        }
     }
 
     if (addButton) {
@@ -589,9 +592,17 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    /* ---------- Inisialisasi ---------- */
+/* ---------- Inisialisasi ---------- */
 
-    (initialRows.length ? initialRows : [{}]).forEach(addRow);
+const rowsToRender = initialRows.length ? initialRows : [{}];
+
+rowsToRender.forEach(function (rowData) {
+    addRow(rowData, true); // jangan hitung ulang per baris
+});
+
+updateTerminNumbers();
+updateAutoLastRow();
+refreshSummary(); // sekali saja, setelah semua baris masuk
 });
 </script>
 @endpush

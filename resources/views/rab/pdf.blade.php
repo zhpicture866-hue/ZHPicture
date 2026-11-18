@@ -198,10 +198,10 @@
             <td class="lbl">GRAND TOTAL</td>
             <td class="text-right bold">{{ $rp($offer->grand_total) }}</td>
         </tr>
-        <tr class="total">
+        {{-- <tr class="total">
             <td class="lbl">DIBULATKAN</td>
             <td class="val text-right">{{ $rp($rounded) }}</td>
-        </tr>
+        </tr> --}}
     </table>
         @if($offer->notes)
             <div>

@@ -144,12 +144,12 @@ function numberToLetters($num) {
                                 Rp {{ number_format($rab->grand_total, 0, ',', '.') }}
                             </th>
                         </tr>
-                        <tr>
+                        {{-- <tr>
                             <th colspan="4" class="text-end fw-bold">DIBULATKAN</th>
                             <th class="text-end fw-bold">
                                 Rp {{ number_format(floor($rab->grand_total / 100000) * 100000, 0, ',', '.') }}
                             </th>
-                        </tr>
+                        </tr> --}}
                     </tfoot>
                 </table>
             </div>
