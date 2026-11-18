@@ -154,8 +154,8 @@ private function loyaltyStats($baseQuery): array
 private function applyDateRange($query, Request $request)
 {
     $request->validate([
-        'start' => 'nullable|date_format:Y-m-d',
-        'end'   => 'nullable|date_format:Y-m-d|after_or_equal:start',
+        'date_start' => 'nullable|date_format:Y-m-d',
+        'date_end'   => 'nullable|date_format:Y-m-d|after_or_equal:start',
     ]);
 
     $now = now();
@@ -169,8 +169,8 @@ private function applyDateRange($query, Request $request)
         '3m'         => [$now->copy()->subMonthsNoOverflow(3)->startOfDay(), $now->copy()->endOfDay()],
         'year'       => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
         'custom'     => [
-            $request->filled('start') ? Carbon::parse($request->start)->startOfDay() : null,
-            $request->filled('end')   ? Carbon::parse($request->end)->endOfDay()     : null,
+            $request->filled('date_start') ? Carbon::parse($request->date_start)->startOfDay() : null,
+            $request->filled('date_end')   ? Carbon::parse($request->date_end)->endOfDay()     : null,
         ],
         default      => [null, null],   // kosong = semua data
     };
