@@ -40,57 +40,32 @@
                         {{-- DETAIL ERROR KHUSUS SUPER ADMIN --}}
                         @auth
                             @if (auth()->user()->hasRole('Super-Admin'))
+                                @php
+                                    $e = $exception?->getPrevious() ?? $exception;
+                                @endphp
 
-                                <div class="alert alert-danger text-start mt-4">
-
-                                    <div class="fw-bold mb-3">
-                                        <i class="ti ti-bug"></i>
-                                        Detail Error
-                                    </div>
-
-                                    @if ($exception && $exception->getMessage())
-
-                                        <div class="mb-3">
-                                            <div class="text-muted small mb-1">
-                                                Message
-                                            </div>
-
-                                            <pre class="mb-0"
-                                                 style="white-space: pre-wrap; word-break: break-word;">{{ $exception->getMessage() }}</pre>
+                                @if ($e)
+                                    <div class="alert alert-danger text-start mt-4 d-block">
+                                        <div class="fw-bold mb-3">
+                                            <i class="ti ti-bug"></i> Detail Error
                                         </div>
 
-                                    @endif
-
-                                    @if ($exception && $exception->getFile())
-
                                         <div class="mb-3">
-                                            <div class="text-muted small mb-1">
-                                                File
-                                            </div>
-
-                                            <code>
-                                                {{ $exception->getFile() }}
-                                            </code>
+                                            <div class="text-muted small mb-1">Message</div>
+                                            <pre class="mb-0 w-100" style="white-space: pre-wrap; word-break: break-word;">{{ $e->getMessage() }}</pre>
                                         </div>
 
-                                    @endif
-
-                                    @if ($exception && $exception->getLine())
+                                        <div class="mb-3">
+                                            <div class="text-muted small mb-1">File</div>
+                                            <code class="d-block" style="word-break: break-all;">{{ $e->getFile() }}</code>
+                                        </div>
 
                                         <div>
-                                            <div class="text-muted small mb-1">
-                                                Line
-                                            </div>
-
-                                            <code>
-                                                {{ $exception->getLine() }}
-                                            </code>
+                                            <div class="text-muted small mb-1">Line</div>
+                                            <code>{{ $e->getLine() }}</code>
                                         </div>
-
-                                    @endif
-
-                                </div>
-
+                                    </div>
+                                @endif
                             @endif
                         @endauth
 

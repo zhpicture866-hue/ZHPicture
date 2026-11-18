@@ -90,7 +90,7 @@ class CustomersController extends Controller
                             </div>';
                 })
                 ->editColumn('channel', fn($row) => $row->readable_channel)
-                ->addColumn('category', fn($row) => $row->readabale_category)
+                ->addColumn('category', fn($row) => $row->readable_category)
                 ->addColumn('orders', fn($row) => (int) $row->projects_count)
                 // ->addColumn('created_at', fn($row) => $row->created_at
                 //     ? $row->created_at->locale('id')->diffForHumans()   // "3 hari yang lalu"

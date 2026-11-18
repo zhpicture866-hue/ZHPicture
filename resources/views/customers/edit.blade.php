@@ -377,63 +377,63 @@
                             <div class="row g-4 mt-2">
                                 <div class="col-md-6">
                                     <label class="form-label">Provinsi</label>
-                                        <select name="province_id" id="province" class="form-select select2">
-                                            <option value="">-- Pilih Provinsi --</option>
-                                            @foreach($provinces as $province)
-                                                <option value="{{ $province->id }}"
-                                                    {{ old('province_id', $customer->province_id) == $province->id ? 'selected' : '' }}>
-                                                    {{ $province->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                    <select name="province_id" id="province" class="form-select select2">
+                                        <option value="">-- Pilih Provinsi --</option>
+                                        @foreach($provinces as $province)
+                                            <option value="{{ $province->id }}"
+                                                {{ old('province_id', $customer->province_id) == $province->id ? 'selected' : '' }}>
+                                                {{ $province->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Kabupaten/Kota</label>
-                                                <select name="city_id" id="city" class="form-select select2">
-                                                    <option value="">-- Pilih Kota --</option>
-                                                    @foreach($shipCities as $city)
-    <option value="{{ $city->id }}"
-        {{ old('city_id', $customer->city_id) == $city->id ? 'selected' : '' }}>
-        {{ $city->name }}
-    </option>
-@endforeach
-                                                </select>
+                                    <select name="city_id" id="city" class="form-select select2">
+                                        <option value="">-- Pilih Kota --</option>
+                                        @foreach($shipCities as $city)
+                                            <option value="{{ $city->id }}"
+                                                {{ old('city_id', $customer->city_id) == $city->id ? 'selected' : '' }}>
+                                                {{ $city->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="col-md-5">
                                     <label class="form-label">Kecamatan</label>
-                                                <select name="district_id" id="district" class="form-select select2">
-                                                    <option value="">-- Pilih Kecamatan --</option>
-                                                    @foreach($shipDistricts as $district)
-    <option value="{{ $district->id }}"
-        {{ old('district_id', $customer->district_id) == $district->id ? 'selected' : '' }}>
-        {{ $district->name }}
-    </option>
-@endforeach
-                                                </select>
+                                    <select name="district_id" id="district" class="form-select select2">
+                                        <option value="">-- Pilih Kecamatan --</option>
+                                        @foreach($shipDistricts as $district)
+                                            <option value="{{ $district->id }}"
+                                                {{ old('district_id', $customer->district_id) == $district->id ? 'selected' : '' }}>
+                                                {{ $district->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="col-md-5">
                                     <label class="form-label">Kelurahan</label>
-                                                <select name="sub_district_id" id="sub_district" class="form-select select2">
-                                                    <option value="">-- Pilih kelurahan --</option>
-                                                   @foreach($shipSubDistricts as $sub_district)
-    <option value="{{ $sub_district->id }}"
-        {{ old('sub_district_id', $customer->sub_district_id) == $sub_district->id ? 'selected' : '' }}>
-        {{ $sub_district->name }}
-    </option>
-@endforeach
-                                                </select>
+                                    <select name="sub_district_id" id="sub_district" class="form-select select2">
+                                        <option value="">-- Pilih kelurahan --</option>
+                                        @foreach($shipSubDistricts as $sub_district)
+                                            <option value="{{ $sub_district->id }}"
+                                                {{ old('sub_district_id', $customer->sub_district_id) == $sub_district->id ? 'selected' : '' }}>
+                                                {{ $sub_district->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Kode Pos</label>
-                                                <select name="postal_code_id" id="postal_code" class="form-select select2">
-                                                    <option value="">-- Pilih Kode Pos --</option>
-                                                    @foreach($shipPostalCodes as $postal_code)
-    <option value="{{ $postal_code->id }}"
-        {{ old('postal_code_id', $customer->postal_code_id) == $postal_code->id ? 'selected' : '' }}>
-        {{ $postal_code->postal_code }}
-    </option>
-@endforeach
-                                                </select>
+                                    <select name="postal_code_id" id="postal_code" class="form-select select2">
+                                        <option value="">-- Pilih Kode Pos --</option>
+                                        @foreach($shipPostalCodes as $postal_code)
+                                            <option value="{{ $postal_code->id }}"
+                                                {{ old('postal_code_id', $customer->postal_code_id) == $postal_code->id ? 'selected' : '' }}>
+                                                {{ $postal_code->postal_code }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
                         </div>

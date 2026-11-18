@@ -840,9 +840,6 @@ function loadPostalCodes(subId, selected = null) {
         loadPostalCodes(this.value);
     });
 
-    // ==============================
-// Fungsi AJAX versi sesuai route kamu
-// ==============================
 function loadCities(provinceId, selected = null, callback = null) {
     if (!provinceId) return;
     $.get(`/api/cities/${provinceId}`, function (data) {
