@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use \App\Models\Concerns\HasCrm;
-use Illuminate\Support\Facades\DB;
 
 class Customer extends Model
 {
@@ -144,8 +143,7 @@ public function getEffectiveLoyaltyLevelAttribute(): int
     $ids = $this->projects()->pluck('id');
 
     $qualified = $ids->filter(fn ($id) =>
-        DB::table('invoice_builds')
-            ->where('project_id', $id)
+        InvoiceBuild::where('project_id', $id)
             ->whereNotNull('approved_at')
             ->exists()
     )->count();
@@ -181,19 +179,23 @@ public function getEffectiveLoyaltyLevelAttribute(): int
         4 => 'Lainnya',
     ][$this->category] ?? 'Tidak diketahui';
     }
-//     public function getLoyaltyLevelAttribute()
-// {
-//     $totalProject = $this->projects()->count();
+public static function lastTransactionSql(): string
+{
+    $projects = (new Project)->getTable();        // 'zhpicture.projects'
+    $builds   = (new InvoiceBuild)->getTable();   // 'zhpicture.invoice_builds'
 
-//     return match (true) {
-//         $totalProject === 0 => 'Lead',
-//         $totalProject <= 2 => 'New Customer',
-//         $totalProject <= 5 => 'Silver',
-//         $totalProject <= 10 => 'Gold',
-//         $totalProject <= 20 => 'Platinum',
-//         default => 'Lead',
-//     };
-// }
+    return "(SELECT MAX(b.approved_at)
+             FROM {$builds} b
+             JOIN {$projects} p ON p.id = b.project_id
+             WHERE p.customer_id = customers.id
+               AND b.approved_at IS NOT NULL)";
+}
+
+public static function lastContactSql(): string
+{
+    // TODO: kalau CRM/follow-up sudah ada, taruh di depan COALESCE
+    return "COALESCE(" . self::lastTransactionSql() . ", customers.created_at)";
+}
 
 public const CHANNELS = [
     'instagram' => 'Instagram',

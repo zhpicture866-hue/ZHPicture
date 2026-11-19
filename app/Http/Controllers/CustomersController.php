@@ -50,6 +50,7 @@ class CustomersController extends Controller
             $query = (clone $baseQuery)
                 ->select('customers.*')
                 ->selectRaw(Customer::levelSql() . ' AS auto_level')
+                ->selectRaw(Customer::lastContactSql() . ' AS last_contact_at')   // baru
                 ->withCount('projects');
     
             // Filter tab (Lead, Prospek, New Customer, Silver, Gold, Platinum)
@@ -87,12 +88,13 @@ class CustomersController extends Controller
                 ->editColumn('channel', fn($row) => $row->readable_channel)
                 ->addColumn('category', fn($row) => $row->readable_category)
                 ->addColumn('orders', fn($row) => (int) $row->projects_count)
-                // ->addColumn('created_at', fn($row) => $row->created_at
-                //     ? $row->created_at->locale('id')->diffForHumans()   // "3 hari yang lalu"
-                //     : '-')
-                ->addColumn('last_contact', fn($row) => $row->last_contact
-                    ? $row->last_contact->locale('id')->diffForHumans()   // "3 hari yang lalu"
-                    : '-')
+
+                ->addColumn('last_contact', function ($row) {
+                    $date = Carbon::parse($row->last_contact_at)->locale('id');
+
+                    return '<div>' . e($date->diffForHumans()) . '</div>'
+                        . '<div class="text-secondary small">' . e($date->translatedFormat('d F Y, H:i')) . '</div>';
+                })
                ->addColumn('loyalty', function ($row) {
                     $level = $row->effective_loyalty_level;
                     return '<span class="lv-badge lv-' . $level . '">' . e($row->readable_loyalty_level) . '</span>';
@@ -113,7 +115,7 @@ class CustomersController extends Controller
                     }
                     return $buttons . '</div>';
                 })
-                ->rawColumns(['customer', 'loyalty', 'action']);
+                ->rawColumns(['customer', 'loyalty', 'action', 'last_contact']);
                 if ($canViewAll) {
                     $dt->with('stats', $this->loyaltyStats($baseQuery))
                     ->with('total', (clone $totalQuery)->count())
@@ -129,55 +131,55 @@ class CustomersController extends Controller
             'filteredTotal' => $canViewAll ? (clone $baseQuery)->count() : 0,
         ]);
     }
-private function loyaltyStats($baseQuery): array
-{
-    $counts = (clone $baseQuery)
-        ->toBase()
-        ->reorder()
-        ->selectRaw(Customer::levelSql() . ' AS lvl, COUNT(*) AS total')
-        ->groupBy('lvl')
-        ->pluck('total', 'lvl');
+    private function loyaltyStats($baseQuery): array
+    {
+        $counts = (clone $baseQuery)
+            ->toBase()
+            ->reorder()
+            ->selectRaw(Customer::levelSql() . ' AS lvl, COUNT(*) AS total')
+            ->groupBy('lvl')
+            ->pluck('total', 'lvl');
 
-    $exclusive = [];
-    foreach (range(1, 6) as $level) {
-        $exclusive[$level] = (int) ($counts[$level] ?? 0);
+        $exclusive = [];
+        foreach (range(1, 6) as $level) {
+            $exclusive[$level] = (int) ($counts[$level] ?? 0);
+        }
+
+        $stats = $exclusive;
+        $stats[2] = $exclusive[2] + $exclusive[3] + $exclusive[4] + $exclusive[5] + $exclusive[6]; 
+        $stats[1] = $exclusive[1] + $stats[2];                                                     
+
+        return $stats;
     }
+    private function applyDateRange($query, Request $request)
+    {
+        $request->validate([
+            'date_start' => 'nullable|date_format:Y-m-d',
+            'date_end'   => 'nullable|date_format:Y-m-d|after_or_equal:date_start',
+        ]);
 
-    $stats = $exclusive;
-    $stats[2] = $exclusive[2] + $exclusive[3] + $exclusive[4] + $exclusive[5] + $exclusive[6]; 
-    $stats[1] = $exclusive[1] + $stats[2];                                                     
+        $now = now();
 
-    return $stats;
-}
-private function applyDateRange($query, Request $request)
-{
-    $request->validate([
-        'date_start' => 'nullable|date_format:Y-m-d',
-        'date_end'   => 'nullable|date_format:Y-m-d|after_or_equal:start',
-    ]);
+        [$start, $end] = match ($request->input('range')) {
+            'today'      => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
+            '7d'         => [$now->copy()->subDays(6)->startOfDay(), $now->copy()->endOfDay()],
+            'month'      => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
+            'last_month' => [$now->copy()->subMonthNoOverflow()->startOfMonth(),
+                            $now->copy()->subMonthNoOverflow()->endOfMonth()],
+            '3m'         => [$now->copy()->subMonthsNoOverflow(3)->startOfDay(), $now->copy()->endOfDay()],
+            'year'       => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
+            'custom'     => [
+                $request->filled('date_start') ? Carbon::parse($request->date_start)->startOfDay() : null,
+                $request->filled('date_end')   ? Carbon::parse($request->date_end)->endOfDay()     : null,
+            ],
+            default      => [null, null],   // kosong = semua data
+        };
 
-    $now = now();
+        if ($start) $query->where('customers.created_at', '>=', $start);
+        if ($end)   $query->where('customers.created_at', '<=', $end);
 
-    [$start, $end] = match ($request->input('range')) {
-        'today'      => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
-        '7d'         => [$now->copy()->subDays(6)->startOfDay(), $now->copy()->endOfDay()],
-        'month'      => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
-        'last_month' => [$now->copy()->subMonthNoOverflow()->startOfMonth(),
-                         $now->copy()->subMonthNoOverflow()->endOfMonth()],
-        '3m'         => [$now->copy()->subMonthsNoOverflow(3)->startOfDay(), $now->copy()->endOfDay()],
-        'year'       => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
-        'custom'     => [
-            $request->filled('date_start') ? Carbon::parse($request->date_start)->startOfDay() : null,
-            $request->filled('date_end')   ? Carbon::parse($request->date_end)->endOfDay()     : null,
-        ],
-        default      => [null, null],   // kosong = semua data
-    };
-
-    if ($start) $query->where('customers.created_at', '>=', $start);
-    if ($end)   $query->where('customers.created_at', '<=', $end);
-
-    return $query;
-}
+        return $query;
+    }
     public function create(Customer $customer)
     {
         $user = auth()->user();
