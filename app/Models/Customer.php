@@ -193,8 +193,10 @@ public static function lastTransactionSql(): string
 
 public static function lastContactSql(): string
 {
-    // TODO: kalau CRM/follow-up sudah ada, taruh di depan COALESCE
-    return "COALESCE(" . self::lastTransactionSql() . ", customers.created_at)";
+    $followUp = "(SELECT MAX(f.created_at) FROM zhpicture.crm_followups f
+                  WHERE f.customer_id = customers.id)";
+
+    return "COALESCE($followUp, " . self::lastTransactionSql() . ", customers.created_at)";
 }
 
 public const CHANNELS = [

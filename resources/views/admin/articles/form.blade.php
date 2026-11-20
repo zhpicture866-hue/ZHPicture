@@ -40,7 +40,7 @@
                         </a>
 
                         <h2 class="page-title mb-0">
-                            {{ $isEdit ? 'Edit' : 'Tulis' }} Artikel
+                            {{ $isEdit ? 'Ubah' : 'Tulis' }} Artikel
                         </h2>
                     </div>
                 </div>
@@ -100,11 +100,11 @@
                                     <div class="mb-3">
                                         <label class="form-label">Judul CTA</label>
                                         <input type="text" name="cta_title" maxlength="120" class="form-control"
-                                            value="{{ old('cta_title', $article->cta_title ?? 'Info ZH Picture') }}">
+                                            value="{{ old('cta_title', $article->cta_title ?? 'Info Antosa Architect') }}">
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Deskripsi</label>
-                                        <textarea name="cta_text" rows="2" maxlength="300" class="form-control">{{ old('cta_text', $article->cta_text ?? 'Gratis konsultasi untuk segala wedding Anda, hubungi kami dengan klik tombol berikut ini') }}</textarea>
+                                        <textarea name="cta_text" rows="2" maxlength="300" class="form-control">{{ old('cta_text', $article->cta_text ?? 'Gratis konsultasi untuk segala kebutuhan rumah dan bangunan Anda, hubungi kami dengan klik tombol berikut ini') }}</textarea>
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md-5">
@@ -230,7 +230,7 @@
                                     <div class="d-flex align-items-center mb-2" style="gap:8px">
                                         <img src="{{ asset('favicon.ico') }}" width="22" height="22" alt="" style="border-radius:50%">
                                         <div style="line-height:1.25">
-                                            <div style="font-size:13px;color:#202124">ZH Picture</div>
+                                            <div style="font-size:13px;color:#202124">Antosa Architect</div>
                                             <div class="pv-url" style="font-size:11px;color:#4d5156"></div>
                                         </div>
                                     </div>
@@ -247,7 +247,7 @@
                                 <div id="pv-share" style="display:none;max-width:500px;border:1px solid #dadde1;border-radius:8px;overflow:hidden">
                                     <div class="pv-img" style="width:100%;aspect-ratio:1.91/1"></div>
                                     <div style="background:#f0f2f5;padding:10px 12px">
-                                        <div style="font-size:12px;color:#65676b;text-transform:uppercase">zhpicture.my.id</div>
+                                        <div style="font-size:12px;color:#65676b;text-transform:uppercase">antosaarchitect.com</div>
                                         <div class="pv-title" style="font-size:16px;font-weight:600;color:#050505"></div>
                                         <div class="pv-desc" style="font-size:14px;color:#65676b"></div>
                                     </div>
@@ -350,7 +350,7 @@
                                     <div class="small fw-semibold mb-2">Tag yang sering dipakai</div>
                                     <div id="tag-popular" class="d-flex flex-wrap gap-1">
                                         @foreach($popularTags as $t)
-                                            <button type="button" class="btn btn-sm btn-warning tag-chip"
+                                            <button type="button" class="btn btn-sm btn-outline-secondary tag-chip"
                                                     data-name="{{ $t->name }}"
                                                     title="{{ $t->articles_count }} artikel">{{ $t->name }}</button>
                                         @endforeach
@@ -376,15 +376,66 @@ const ANALYZE_URL  = @json(route('articles.analyze'));
 const ARTICLE_ID   = @json($article->id);
 const HAS_FEATURED = @json((bool) $article->featured_image);
 const CSRF         = @json(csrf_token());
-const EXISTING_OG = @json(($article->og_auto ?: $article->og_image) ? asset('storage/'.($article->og_auto ?: $article->og_image)) : null);
+const EXISTING_OG_MANUAL = @json($article->og_image ? asset('storage/'.$article->og_image) : null);
+const EXISTING_OG_AUTO   = @json($article->og_auto ? asset('storage/'.$article->og_auto) : null);
 const EXISTING_FEATURED = @json($article->featured_image ? asset('storage/'.$article->featured_image) : null);
 let ogObjUrl = null, featObjUrl = null;   // pratinjau file yang baru dipilih (belum diupload)
 let editor, timer;
 
 const YT_RE = /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)[\w-]{11}\S*$/i;
+const UPLOAD_URL = @json(route('articles.upload-image'));
 
+class ArticleUploadAdapter {
+    constructor(loader) {
+        this.loader = loader;
+        this.controller = new AbortController();
+    }
+
+    upload() {
+        return this.loader.file.then(file => {
+            const data = new FormData();
+            data.append('upload', file);
+
+            return fetch(UPLOAD_URL, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                body: data,
+                credentials: 'same-origin',
+                signal: this.controller.signal,
+            })
+            .catch(() => Promise.reject('Koneksi terputus saat mengunggah gambar.'))
+            .then(res => res.json().catch(() => ({})).then(json => {
+                if (!res.ok || !json.url) {
+                    const msg = json.errors
+                        ? Object.values(json.errors).flat()[0]
+                        : (json.message || 'Gagal mengunggah gambar.');
+                    return Promise.reject(msg);
+                }
+                return { default: json.url };
+            }));
+        });
+    }
+
+    abort() { this.controller.abort(); }
+}
+
+function ArticleUploadPlugin(editor) {
+    editor.plugins.get('FileRepository').createUploadAdapter = loader => new ArticleUploadAdapter(loader);
+}
 ClassicEditor.create($('content'), {
-    toolbar: ['heading','|','bold','italic','link','bulletedList','numberedList','blockQuote','insertTable','mediaEmbed','undo','redo'],
+    extraPlugins: [ArticleUploadPlugin],
+    heading: {
+        options: [
+            { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
+            { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
+            { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' },
+            { model: 'heading4', view: 'h4', title: 'Heading 4', class: 'ck-heading_heading4' },
+        ],
+    },
+    toolbar: ['heading','|','bold','italic','link','bulletedList','numberedList','blockQuote','insertTable','uploadImage','mediaEmbed','undo','redo'],
+    image: {
+        toolbar: ['imageStyle:inline','imageStyle:block','imageStyle:side','|','toggleImageCaption','imageTextAlternative'],
+    },
 }).then(ed => {
     editor = ed;
     // Setelah video dimasukkan, buat kotak keterangan (paragraf miring kosong) di bawahnya
@@ -425,7 +476,7 @@ const ctaDefaults = () => {
     let url = '';
     try { url = localStorage.getItem('cta_url') || ''; } catch (e) {}
     return {
-        judul: 'Info ZH Picture',
+        judul: 'Info Antosa Architect',
         teks: 'Gratis konsultasi untuk segala kebutuhan rumah dan bangunan Anda, hubungi kami dengan klik tombol berikut ini',
         tombol: 'HUBUNGI KAMI',
         url,
@@ -488,13 +539,13 @@ function updatePreview() {
     const md    = $('meta_description').value.trim() || $('excerpt').value.trim();
 
     // Urutan sama dengan di halaman publik: gambar share > gambar utama
-    const img = ogObjUrl || EXISTING_OG || featObjUrl || EXISTING_FEATURED || null;
+    const img = ogObjUrl || EXISTING_OG_MANUAL || featObjUrl || EXISTING_OG_AUTO || EXISTING_FEATURED || null;
 
     $('mt-count').textContent = `(${$('meta_title').value.length}/70)`;
     $('md-count').textContent = `(${$('meta_description').value.length}/170)`;
 
     const set = (cls, text) => document.querySelectorAll('.' + cls).forEach(el => el.textContent = text);
-    set('pv-url',   `zhpicture.my.id › artikel › ${slug}`);
+    set('pv-url',   `antosaarchitect.com › artikel › ${slug}`);
     set('pv-title', mt.slice(0, 60) || 'Judul artikel');
     set('pv-desc',  md.slice(0, 160) || 'Deskripsi artikel akan tampil di sini.');
 

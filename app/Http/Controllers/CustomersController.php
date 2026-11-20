@@ -107,9 +107,9 @@ class CustomersController extends Controller
                     if (ActiveRole::hasPermission('lihat data customer')) {
                         $buttons .= '<a href="' . route('customers.show', $customer->id) . '" class="btn btn-icon btn-sm btn-ghost-dark" title="Lihat"><i class="ti ti-eye"></i></a>';
                     }
-                    // if (auth()->user()->can('lihat data crm')) {
-                    //     $buttons .= '<a href="' . route('crm.customers.show', $customer->id) . '" class="btn btn-icon btn-sm btn-ghost-dark" title="CRM"><i class="ti ti-address-book"></i></a>';
-                    // }
+                    if (auth()->user()->can('lihat data crm')) {
+                        $buttons .= '<a href="' . route('crm.customers.show', $customer->id) . '" class="btn btn-icon btn-sm btn-ghost-dark" title="CRM"><i class="ti ti-address-book"></i></a>';
+                    }
                     if (ActiveRole::hasPermission('hapus data customer')) {
                         $buttons .= '<button data-id="' . $customer->id . '" class="btn btn-icon btn-sm btn-ghost-danger delete-customer" title="Hapus"><i class="ti ti-trash"></i></button>';
                     }
