@@ -14,8 +14,9 @@ return new class extends Migration
             $table->unsignedTinyInteger('month'); // 1..12
             $table->decimal('target', 18, 2)->default(0);
             $table->timestamps();
+            $t->string('type', 10)->default('omset');
 
-            $table->unique(['year', 'month']);
+            $table->unique(['year', 'month', 'type']);
         });
     }
 
