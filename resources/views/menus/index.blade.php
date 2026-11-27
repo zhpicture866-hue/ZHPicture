@@ -165,7 +165,7 @@
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Berhasil!',
-                                    text: 'User telah dihapus.',
+                                    text: 'Data Menu telah dihapus.',
                                     timer: 2000,
                                     showConfirmButton: false
                             });
