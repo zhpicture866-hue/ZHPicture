@@ -19,7 +19,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectLevelController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\ContractorController;
-use App\Http\Controllers\WorkerController;
+use App\Http\Controllers\DashboardFinanceController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\InvestorController;
 use App\Http\Controllers\ArchitectController;
@@ -36,7 +36,7 @@ use App\Http\Controllers\MenuController;
 use App\Http\Controllers\DesignPackageController;
 use App\Http\Controllers\RabPackageController;
 use App\Http\Controllers\RabController;
-use App\Http\Controllers\JobCategoryController;
+use App\Http\Controllers\FinanceTargetController;
 use App\Http\Controllers\InvoiceBuildController;
 use App\Http\Controllers\BuildProcessItemController;
 use App\Http\Controllers\LayananController;
@@ -84,7 +84,12 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 Route::get('/home', function () {
     return redirect()->route('dashboard');
 })->name('home');
-
+Route::get('/dashboard-finance', [DashboardFinanceController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('dashboard-finance');
+Route::post('/dashboard-finance/target', [FinanceTargetController::class, 'store'])
+    ->middleware(['auth'])
+    ->name('dashboard-finance.target.store');
 Route::middleware(['auth', 'role:Super-Admin'])->group(function () {
     Route::resource('/menus', MenuController::class);
 });

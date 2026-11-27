@@ -382,7 +382,7 @@ const EXISTING_FEATURED = @json($article->featured_image ? asset('storage/'.$art
 let ogObjUrl = null, featObjUrl = null;   // pratinjau file yang baru dipilih (belum diupload)
 let editor, timer;
 
-const YT_RE = /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)[\w-]{11}\S*$/i;
+const YT_RE = /^https?:\/\/(?:(?:www\.|m\.)?youtube\.com\/(?:watch\?v=|shorts\/)[\w-]{11}|youtu\.be\/[\w-]{11}|(?:www\.|m\.)?tiktok\.com\/@[\w.-]+\/video\/\d+)\S*$/i;
 const UPLOAD_URL = @json(route('articles.upload-image'));
 
 class ArticleUploadAdapter {
@@ -436,6 +436,27 @@ ClassicEditor.create($('content'), {
     image: {
         toolbar: ['imageStyle:inline','imageStyle:block','imageStyle:side','|','toggleImageCaption','imageTextAlternative'],
     },
+    mediaEmbed: {
+    extraProviders: [
+        {
+            name: 'youtubeShorts',
+            url: /^(?:m\.)?youtube\.com\/shorts\/([\w-]+)/,
+            html: match =>
+                '<div style="position:relative;max-width:360px;margin:0 auto;padding-bottom:min(177.78%,640px);height:0;">' +
+                `<iframe src="https://www.youtube.com/embed/${match[1]}" ` +
+                'style="position:absolute;top:0;left:0;width:100%;height:100%;" frameborder="0" ' +
+                'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>'
+        },
+        {
+            name: 'tiktok',
+            url: /^(?:m\.)?tiktok\.com\/@[\w.-]+\/video\/(\d+)/,
+            html: match =>
+                `<iframe src="https://www.tiktok.com/embed/v2/${match[1]}" ` +
+                'style="display:block;margin:0 auto;width:100%;max-width:340px;height:740px;border:0;" ' +
+                'allowfullscreen allow="encrypted-media"></iframe>'
+        }
+    ]
+},
 }).then(ed => {
     editor = ed;
     // Setelah video dimasukkan, buat kotak keterangan (paragraf miring kosong) di bawahnya
