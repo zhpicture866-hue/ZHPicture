@@ -14,7 +14,6 @@ class Project extends Model
     protected $table = 'zhpicture.projects';
     protected $keyType = 'string';
     public $incrementing = false;
-    public $timestamps = false; // kalau tabel tidak punya created_at / updated_at
 
     protected $fillable = [
         'project_code',
